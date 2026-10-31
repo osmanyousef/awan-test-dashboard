@@ -438,7 +438,7 @@ function closeAllDropdowns() {
           <svg v-else-if="t === 'Flights'" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="tab-icon">
             <path d="M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3.5c-.5-.5-2.5 0-4 1.5L13.5 8.5 5.3 6.7c-.8-.2-1.6.1-2.1.7l-.7.7 6.4 3.8-3.6 3.6-2.5-.5c-.5-.1-1 .1-1.3.4l-.4.4 2.8 2.8 2.8 2.8.4-.4c.3-.3.5-.8.4-1.3l-.5-2.5 3.6-3.6 3.8 6.4.7-.7c.6-.5.9-1.3.7-2.1z" />
           </svg>
-          <span>{{ t }}</span>
+          <span>{{ t === 'Stays' ? 'Hotel' : t }}</span>
         </button>
       </div>
 
