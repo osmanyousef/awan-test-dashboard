@@ -146,14 +146,12 @@ function formatTextDate(d: Date | null): string {
   return `${day} ${month} ${year}`
 }
 
-const nightsOpen = ref(false)
 const activeDateField = ref<'start' | 'end'>('start')
 
 function openFromCalendar() {
   activeDateField.value = 'start'
   calendarOpen.value = true
   roomsOpen.value = false
-  nightsOpen.value = false
   destinationDropdownOpen.value = false
   flightFromOpen.value = false
   flightToOpen.value = false
@@ -166,20 +164,6 @@ function openToCalendar() {
   }
   activeDateField.value = 'end'
   calendarOpen.value = true
-  roomsOpen.value = false
-  nightsOpen.value = false
-  destinationDropdownOpen.value = false
-  flightFromOpen.value = false
-  flightToOpen.value = false
-  flightCabinOpen.value = false
-}
-
-function openNightsDropdown() {
-  if (activeTab.value === 'Flights' && flightTripType.value === 'one-way') {
-    flightTripType.value = 'return'
-  }
-  nightsOpen.value = !nightsOpen.value
-  calendarOpen.value = false
   roomsOpen.value = false
   destinationDropdownOpen.value = false
   flightFromOpen.value = false
@@ -398,7 +382,6 @@ function swapAirports() {
 function handleSearch() {
   calendarOpen.value = false
   roomsOpen.value = false
-  nightsOpen.value = false
   destinationDropdownOpen.value = false
   flightFromOpen.value = false
   flightToOpen.value = false
@@ -431,7 +414,6 @@ function closeAllDropdowns() {
   flightToOpen.value = false
   calendarOpen.value = false
   roomsOpen.value = false
-  nightsOpen.value = false
   flightCabinOpen.value = false
 }
 </script>
@@ -606,64 +588,55 @@ function closeAllDropdowns() {
           <div class="stays-col stays-col--nights">
             <label class="field-label">Days</label>
             <div
-              class="input-box nights-input-box"
+              class="input-box nights-direct-box"
               :class="{ 'input-box--disabled': flightTripType === 'one-way' }"
-              @click="openNightsDropdown"
             >
               <svg class="box-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="12" cy="12" r="10" />
                 <polyline points="12 6 12 12 16 14" />
               </svg>
-              <span class="nights-text-val">
-                {{ flightTripType === 'one-way' ? 'One-way' : `${nightsCount} day${nightsCount !== 1 ? 's' : ''}` }}
-              </span>
-              <svg v-if="flightTripType !== 'one-way'" width="13" height="13" viewBox="0 0 20 20" fill="currentColor" class="chevron-icon">
-                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-              </svg>
-            </div>
-
-            <!-- Days Counter Popover -->
-            <div v-if="nightsOpen && activeTab === 'Flights'" class="nights-popover" @click.stop>
-              <div class="counter-row">
-                <span class="counter-label">Days</span>
-                <div class="counter-box">
+              <template v-if="flightTripType === 'one-way'">
+                <span class="nights-direct-label">One-way</span>
+              </template>
+              <template v-else>
+                <span class="nights-direct-label">{{ nightsCount > 1 ? 'Days' : 'Day' }}</span>
+                <div class="inline-stepper">
                   <button
                     type="button"
-                    class="counter-btn"
+                    class="inline-counter-btn"
                     :disabled="nightsCount <= 1"
-                    @click="incrementNights(-1)"
+                    @click.stop="incrementNights(-1)"
                     aria-label="Decrease days"
                   >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="12" cy="12" r="10" />
+                      <line x1="8" y1="12" x2="16" y2="12" />
                     </svg>
                   </button>
                   <input
                     type="number"
                     min="1"
                     max="90"
-                    class="counter-val nights-num-input"
+                    class="nights-direct-num"
                     :value="nightsCount"
                     @input="onNightsInput"
                     @change="onNightsChange"
-                    @keydown.enter="nightsOpen = false"
                   />
                   <button
                     type="button"
-                    class="counter-btn"
+                    class="inline-counter-btn"
                     :disabled="nightsCount >= 90"
-                    @click="incrementNights(1)"
+                    @click.stop="incrementNights(1)"
                     aria-label="Increase days"
                   >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="12" cy="12" r="10" />
+                      <line x1="12" y1="8" x2="12" y2="16" />
+                      <line x1="8" y1="12" x2="16" y2="12" />
                     </svg>
                   </button>
                 </div>
-              </div>
-              <div class="popover-actions nights-popover-actions">
-                <button type="button" class="apply-btn" @click="nightsOpen = false">Apply</button>
-              </div>
+              </template>
             </div>
           </div>
 
@@ -727,7 +700,10 @@ function closeAllDropdowns() {
               </div>
             </div>
           </div>
+        </div>
 
+        <!-- ROW 3: Class | Direct flights | Search -->
+        <div class="stays-row stays-row--actions">
           <!-- Cabin Class Choice Field -->
           <div class="stays-col stays-col--cabin">
             <label class="field-label">Class</label>
@@ -801,7 +777,7 @@ function closeAllDropdowns() {
           <!-- Destination -->
           <div class="stays-col stays-col--destination" :class="{ 'input-col--error': destinationError }">
             <label class="field-label">Destination</label>
-            <div class="input-box" @click="destinationDropdownOpen = true; calendarOpen = false; nightsOpen = false; roomsOpen = false">
+            <div class="input-box" @click="destinationDropdownOpen = true; calendarOpen = false; roomsOpen = false">
               <svg class="box-icon" :class="{ 'box-icon--error': destinationError }" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 1118 0z" />
                 <circle cx="12" cy="10" r="3" />
@@ -855,56 +831,46 @@ function closeAllDropdowns() {
           <!-- Nights -->
           <div class="stays-col stays-col--nights">
             <label class="field-label">Nights</label>
-            <div class="input-box nights-input-box" @click="openNightsDropdown">
+            <div class="input-box nights-direct-box">
               <svg class="box-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
               </svg>
-              <span class="nights-text-val">{{ nightsCount }} night{{ nightsCount !== 1 ? 's' : '' }}</span>
-              <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor" class="chevron-icon">
-                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-              </svg>
-            </div>
-            <!-- Nights Counter Popover -->
-            <div v-if="nightsOpen && activeTab === 'Stays'" class="nights-popover" @click.stop>
-              <div class="counter-row">
-                <span class="counter-label">Nights</span>
-                <div class="counter-box">
-                  <button
-                    type="button"
-                    class="counter-btn"
-                    :disabled="nightsCount <= 1"
-                    @click="incrementNights(-1)"
-                    aria-label="Decrease nights"
-                  >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/>
-                    </svg>
-                  </button>
-                  <input
-                    type="number"
-                    min="1"
-                    max="90"
-                    class="counter-val nights-num-input"
-                    :value="nightsCount"
-                    @input="onNightsInput"
-                    @change="onNightsChange"
-                    @keydown.enter="nightsOpen = false"
-                  />
-                  <button
-                    type="button"
-                    class="counter-btn"
-                    :disabled="nightsCount >= 90"
-                    @click="incrementNights(1)"
-                    aria-label="Increase nights"
-                  >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
-                    </svg>
-                  </button>
-                </div>
-              </div>
-              <div class="popover-actions nights-popover-actions">
-                <button type="button" class="apply-btn" @click="nightsOpen = false">Apply</button>
+              <span class="nights-direct-label">{{ nightsCount > 1 ? 'Nights' : 'Night' }}</span>
+              <div class="inline-stepper">
+                <button
+                  type="button"
+                  class="inline-counter-btn"
+                  :disabled="nightsCount <= 1"
+                  @click.stop="incrementNights(-1)"
+                  aria-label="Decrease nights"
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="8" y1="12" x2="16" y2="12" />
+                  </svg>
+                </button>
+                <input
+                  type="number"
+                  min="1"
+                  max="90"
+                  class="nights-direct-num"
+                  :value="nightsCount"
+                  @input="onNightsInput"
+                  @change="onNightsChange"
+                />
+                <button
+                  type="button"
+                  class="inline-counter-btn"
+                  :disabled="nightsCount >= 90"
+                  @click.stop="incrementNights(1)"
+                  aria-label="Increase nights"
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="8" x2="12" y2="16" />
+                    <line x1="8" y1="12" x2="16" y2="12" />
+                  </svg>
+                </button>
               </div>
             </div>
           </div>
@@ -990,7 +956,7 @@ function closeAllDropdowns() {
           <!-- Guests & Rooms -->
           <div class="stays-col stays-col--guests">
             <label class="field-label">Guests &amp; Rooms</label>
-            <div class="input-box" @click="roomsOpen = !roomsOpen; calendarOpen = false; destinationDropdownOpen = false; nightsOpen = false">
+            <div class="input-box" @click="roomsOpen = !roomsOpen; calendarOpen = false; destinationDropdownOpen = false">
               <svg class="box-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
                 <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
                 <circle cx="12" cy="7" r="4" />
@@ -1399,26 +1365,35 @@ function closeAllDropdowns() {
   flex: 1.1;
 }
 
-/* ── SEARCH FORMS 2-ROW LAYOUT (Stays & Flights) ────────── */
-.stays-search-wrapper,
+/* ── SEARCH FORMS LAYOUT (Stays & Flights) ────────── */
+.stays-search-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
 .flight-search-wrapper {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 16px;
 }
 
 .stays-row {
   display: flex;
   align-items: flex-end;
-  gap: 12px;
+  gap: 14px;
   flex-wrap: wrap;
 }
 
 .stays-row--bottom {
-  margin-top: 4px;
+  margin-top: 0;
 }
 
-/* Top row: Destination | From | Nights | To */
+.stays-row--actions {
+  margin-top: 2px;
+}
+
+/* Columns */
 .stays-col {
   position: relative;
   display: flex;
@@ -1427,32 +1402,33 @@ function closeAllDropdowns() {
 }
 
 .stays-col--destination {
-  flex: 2.2 1 240px;
+  flex: 2 1 220px;
   min-width: 200px;
 }
 
 .stays-col--date {
-  flex: 1.4 1 160px;
-  min-width: 140px;
+  flex: 1 1 200px;
+  min-width: 170px;
 }
 
 .stays-col--nights {
-  flex: 1 1 140px;
-  min-width: 120px;
+  flex: 0 0 175px;
+  min-width: 165px;
+  max-width: 190px;
 }
 
 /* Row 1 guests (Passengers) */
 .stays-col--guests {
-  flex: 1 1 160px;
-  min-width: 150px;
-  max-width: 240px;
+  flex: 1 1 180px;
+  min-width: 160px;
+  max-width: 260px;
 }
 
-/* Row 2 cabin class */
+/* Row 3 cabin class */
 .stays-col--cabin {
-  flex: 1.2 1 160px;
-  min-width: 150px;
-  max-width: 240px;
+  flex: 0 1 220px;
+  min-width: 180px;
+  max-width: 260px;
   position: relative;
 }
 
@@ -1558,55 +1534,84 @@ function closeAllDropdowns() {
   white-space: nowrap;
 }
 
-/* Nights popover */
-.nights-popover {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  background: #ffffff;
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  box-shadow: 0 10px 28px rgba(31, 43, 56, 0.13);
-  padding: 16px 18px;
-  z-index: 60;
-  width: 250px;
-}
-
-.nights-popover .counter-row {
-  margin-bottom: 0;
+/* Inline Nights / Days Direct Stepper (Clean, Borderless Stepper) */
+.nights-direct-box {
+  cursor: default;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 4px;
+  padding: 0 8px 0 10px;
 }
 
-.nights-popover-actions {
-  margin-top: 14px;
-  padding-top: 12px;
-  border-top: 1px solid var(--color-border);
+.nights-direct-box:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(11, 43, 90, 0.08);
+}
+
+.nights-direct-label {
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--color-text);
+  margin-right: auto;
+  white-space: nowrap;
+}
+
+.inline-stepper {
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
+  gap: 2px;
+  background: transparent;
+  border: none;
+  flex-shrink: 0;
 }
 
-.nights-popover-actions .apply-btn {
-  padding: 6px 18px;
-  font-size: 0.85rem;
+.inline-counter-btn {
+  background: transparent;
+  border: none;
+  color: var(--color-primary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  padding: 0;
+  flex-shrink: 0;
+  transition: background-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
 }
 
-.nights-num-input {
-  width: 44px;
+.inline-counter-btn:hover:not(:disabled) {
+  background-color: var(--color-primary-light, #f0f4f9);
+  color: var(--color-navy);
+}
+
+.inline-counter-btn:active:not(:disabled) {
+  transform: scale(0.92);
+}
+
+.inline-counter-btn:disabled {
+  color: #c7d2e0;
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.nights-direct-num {
+  width: 26px;
   text-align: center;
   border: none;
   background: transparent;
-  font-size: 1rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 700;
   color: var(--color-text);
   outline: none;
   padding: 0;
   -moz-appearance: textfield;
 }
 
-.nights-num-input::-webkit-outer-spin-button,
-.nights-num-input::-webkit-inner-spin-button {
+.nights-direct-num::-webkit-outer-spin-button,
+.nights-direct-num::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }

@@ -1,1446 +1,1603 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, RouterLink } from 'vue-router'
+import { HOTELS } from '../config/hotelsData'
 
 const route = useRoute()
 
 // ── Search Parameter Bar ──────────────────────────────────
 const destination = computed(() => (route.query.dest as string) || 'Istanbul')
-const nightsCount = computed(() => Number(route.query.nights) || 3)
-const datesText = computed(() => `03 Nov - 06 Nov (${nightsCount.value} nights)`)
-const guestsText = computed(() => (route.query.guests as string) || '2 adults, 1 room')
-
-// ── AI Destination Summary ────────────────────────────────
-const showAiSummary = ref(true)
+const nightsCount = computed(() => Number(route.query.nights) || 14)
+const datesText = computed(() => {
+  if (route.query.from && route.query.to) {
+    return `${route.query.from} – ${route.query.to} (${nightsCount.value} nights)`
+  }
+  return `12 Feb – 26 Feb (${nightsCount.value} nights)`
+})
+const guestsText = computed(() => (route.query.guests as string) || '6 adults, 2 rooms')
 
 // ── Filters State ──────────────────────────────────────────
-const hotelNameSearch = ref('')
-const selectedTopProducts = ref<string[]>([])
-const selectedBoards = ref<string[]>([])
-const selectedStars = ref<number[]>([4, 5])
-const selectedZone = ref<string[]>([])
-
-// ── Sort & View ────────────────────────────────────────────
-const sortBy = ref<'suggested' | 'price-asc' | 'price-desc' | 'rating'>('suggested')
+const filterQ = ref('')
+const filterRef = ref(false)
+const filterBoards = ref<Set<string>>(new Set())
+const filterStars = ref<Set<number>>(new Set())
+const filterMax = ref(3000)
+const sortBy = ref<'s' | 'pa' | 'pd'>('s')
 const resultsPerPage = ref(20)
-const showMapModal = ref(false)
+const sideOpen = ref(false)
 
-// ── Wishlist State ─────────────────────────────────────────
-const favorites = ref<number[]>([2]) // Hotel id 2 favorited by default
-function toggleFavorite(id: number) {
-  const idx = favorites.value.indexOf(id)
-  if (idx > -1) favorites.value.splice(idx, 1)
-  else favorites.value.push(id)
+// ── Favorites & Expandable Rooms State ─────────────────────
+const favs = ref<Set<string>>(new Set())
+const openHotelName = ref<string | null>(null)
+
+// ── Toast Notification State ───────────────────────────────
+const toastMessage = ref('')
+const toastVisible = ref(false)
+let toastTimer: ReturnType<typeof setTimeout> | null = null
+
+function showToast(msg: string) {
+  toastMessage.value = msg
+  toastVisible.value = true
+  if (toastTimer) clearTimeout(toastTimer)
+  toastTimer = setTimeout(() => {
+    toastVisible.value = false
+  }, 2200)
 }
 
-// ── Expanded Room Selection ────────────────────────────────
-const expandedHotelId = ref<number | null>(null)
-function toggleRooms(id: number) {
-  expandedHotelId.value = expandedHotelId.value === id ? null : id
+function toggleFav(hotelName: string) {
+  const next = new Set(favs.value)
+  if (next.has(hotelName)) {
+    next.delete(hotelName)
+    showToast('Removed from favorites')
+  } else {
+    next.add(hotelName)
+    showToast(`${hotelName} saved to favorites`)
+  }
+  favs.value = next
 }
 
-// ── Mock Hotels Data (Stylized for Awan Travel OTA) ────────
-interface RoomRate {
-  id: string
-  name: string
-  board: string
-  cancellation: string
-  isFreeCancellation: boolean
-  pricePerNight: number
-  totalPrice: number
-  currency: string
-  availableRooms: number
+function toggleRooms(hotelName: string) {
+  openHotelName.value = openHotelName.value === hotelName ? null : hotelName
 }
 
-interface HotelResult {
-  id: number
-  name: string
-  stars: number
-  location: string
-  zone: string
-  image: string
-  badge?: string
-  tags: string[]
-  amenities: { icon: string; label: string }[]
-  reviewScore: number
-  reviewCount: number
-  reviewText: string
-  featuredRoom: RoomRate
-  rooms: RoomRate[]
+function addBooking(label: string) {
+  showToast(`Added to booking · ${label}`)
 }
 
-const hotels = ref<HotelResult[]>([
-  {
-    id: 1,
-    name: 'Sura Hagia Sophia Hotel',
-    stars: 5,
-    location: 'Sultanahmet / Old City, Istanbul',
-    zone: 'Sultanahmet',
-    image: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=700&q=80',
-    badge: 'LUXURY COLLECTION',
-    tags: ['Most popular', 'Preferred Partner', 'Contracted Rate'],
-    amenities: [
-      { icon: '🅿️', label: 'Parking' },
-      { icon: '❄️', label: 'Air conditioned' },
-      { icon: '♨️', label: 'Luxury Spa' },
-      { icon: '🍴', label: 'Fine Dining' },
-      { icon: '🏋️', label: 'Fitness Center' },
-      { icon: '📶', label: 'Free Wi-Fi' },
-    ],
-    reviewScore: 4.8,
-    reviewCount: 1671,
-    reviewText: 'Exceptional',
-    featuredRoom: {
-      id: 'r1',
-      name: 'Deluxe Queen Room with Historic View',
-      board: 'Room Only (RO)',
-      cancellation: 'Free cancellation until 01 Nov',
-      isFreeCancellation: true,
-      pricePerNight: 260.00,
-      totalPrice: 780.00,
-      currency: 'LYD',
-      availableRooms: 3,
-    },
-    rooms: [
-      {
-        id: 'r1',
-        name: 'Deluxe Queen Room with Historic View',
-        board: 'Room Only (RO)',
-        cancellation: 'Free cancellation until 01 Nov',
-        isFreeCancellation: true,
-        pricePerNight: 260.00,
-        totalPrice: 780.00,
-        currency: 'LYD',
-        availableRooms: 3,
-      },
-      {
-        id: 'r2',
-        name: 'Deluxe King Room with Balcony',
-        board: 'Buffet Breakfast Included (BB)',
-        cancellation: 'Free cancellation until 01 Nov',
-        isFreeCancellation: true,
-        pricePerNight: 310.00,
-        totalPrice: 930.00,
-        currency: 'LYD',
-        availableRooms: 2,
-      },
-      {
-        id: 'r3',
-        name: 'Hagia Sophia Suite with Terrace',
-        board: 'Half Board (HB)',
-        cancellation: 'Non-refundable (Instant Voucher)',
-        isFreeCancellation: false,
-        pricePerNight: 480.00,
-        totalPrice: 1440.00,
-        currency: 'LYD',
-        availableRooms: 1,
-      },
-    ],
-  },
-  {
-    id: 2,
-    name: 'Legacy Ottoman Hotel Istanbul',
-    stars: 5,
-    location: 'Sirkeci / Eminonu, Istanbul',
-    zone: 'Eminonu',
-    image: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=700&q=80',
-    badge: 'LUXURY COLLECTION',
-    tags: ['Best Seller', 'Preferred Partner', 'Special Promotion -20%'],
-    amenities: [
-      { icon: '🅿️', label: 'Valet Parking' },
-      { icon: '❄️', label: 'Climate Control' },
-      { icon: '♨️', label: 'Ottoman Hammam & Spa' },
-      { icon: '🍴', label: 'Rooftop Lounge' },
-      { icon: '🏊‍♂️', label: 'Indoor Pool' },
-      { icon: '📶', label: 'High-speed Wi-Fi' },
-    ],
-    reviewScore: 4.6,
-    reviewCount: 1097,
-    reviewText: 'Very Good',
-    featuredRoom: {
-      id: 'r4',
-      name: 'Superior Double Room with Bosphorus View',
-      board: 'Breakfast Included (BB)',
-      cancellation: 'Non-refundable (Promo Rate)',
-      isFreeCancellation: false,
-      pricePerNight: 295.00,
-      totalPrice: 885.00,
-      currency: 'LYD',
-      availableRooms: 4,
-    },
-    rooms: [
-      {
-        id: 'r4',
-        name: 'Superior Double Room with Bosphorus View',
-        board: 'Breakfast Included (BB)',
-        cancellation: 'Non-refundable (Promo Rate)',
-        isFreeCancellation: false,
-        pricePerNight: 295.00,
-        totalPrice: 885.00,
-        currency: 'LYD',
-        availableRooms: 4,
-      },
-      {
-        id: 'r5',
-        name: 'Grand Ottoman Heritage Suite',
-        board: 'Full Board Included (FB)',
-        cancellation: 'Free cancellation until 02 Nov',
-        isFreeCancellation: true,
-        pricePerNight: 460.00,
-        totalPrice: 1380.00,
-        currency: 'LYD',
-        availableRooms: 2,
-      },
-    ],
-  },
-  {
-    id: 3,
-    name: 'Great Fortune Hotel & Spa',
-    stars: 4,
-    location: 'Old City Center, Istanbul',
-    zone: 'Sultanahmet',
-    image: 'https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=700&q=80',
-    badge: 'TOP VALUE B2B',
-    tags: ['Most Popular', 'Free Airport Shuttle'],
-    amenities: [
-      { icon: '❄️', label: 'Air conditioning' },
-      { icon: '♨️', label: 'Turkish Bath & Spa' },
-      { icon: '🍴', label: 'Restaurant' },
-      { icon: '📶', label: 'Free Wi-Fi' },
-      { icon: '🛏️', label: 'Soundproof Rooms' },
-    ],
-    reviewScore: 4.5,
-    reviewCount: 1032,
-    reviewText: 'Very Good',
-    featuredRoom: {
-      id: 'r6',
-      name: 'Standard Double or Twin Room',
-      board: 'Breakfast Included (BB)',
-      cancellation: 'Free cancellation until 31 Oct',
-      isFreeCancellation: true,
-      pricePerNight: 187.00,
-      totalPrice: 561.00,
-      currency: 'LYD',
-      availableRooms: 5,
-    },
-    rooms: [
-      {
-        id: 'r6',
-        name: 'Standard Double or Twin Room',
-        board: 'Breakfast Included (BB)',
-        cancellation: 'Free cancellation until 31 Oct',
-        isFreeCancellation: true,
-        pricePerNight: 187.00,
-        totalPrice: 561.00,
-        currency: 'LYD',
-        availableRooms: 5,
-      },
-      {
-        id: 'r7',
-        name: 'Executive Family Connecting Room',
-        board: 'Breakfast Included (BB)',
-        cancellation: 'Free cancellation until 01 Nov',
-        isFreeCancellation: true,
-        pricePerNight: 290.00,
-        totalPrice: 870.00,
-        currency: 'LYD',
-        availableRooms: 2,
-      },
-    ],
-  },
-  {
-    id: 4,
-    name: 'Golden Crown Hotel Old Town',
-    stars: 4,
-    location: 'Cemberlitas, Istanbul',
-    zone: 'Fatih',
-    image: 'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=700&q=80',
-    tags: ['Preferred Partner', 'Instant Confirmation'],
-    amenities: [
-      { icon: '🅿️', label: 'Parking' },
-      { icon: '🍴', label: 'Buffet Restaurant' },
-      { icon: '📶', label: 'Wi-Fi 6' },
-      { icon: '☕', label: 'Coffee Station' },
-    ],
-    reviewScore: 4.4,
-    reviewCount: 846,
-    reviewText: 'Good',
-    featuredRoom: {
-      id: 'r8',
-      name: 'Standard Double Room',
-      board: 'Breakfast Included (BB)',
-      cancellation: 'Free cancellation until 31 Oct',
-      isFreeCancellation: true,
-      pricePerNight: 206.00,
-      totalPrice: 618.00,
-      currency: 'LYD',
-      availableRooms: 6,
-    },
-    rooms: [
-      {
-        id: 'r8',
-        name: 'Standard Double Room',
-        board: 'Breakfast Included (BB)',
-        cancellation: 'Free cancellation until 31 Oct',
-        isFreeCancellation: true,
-        pricePerNight: 206.00,
-        totalPrice: 618.00,
-        currency: 'LYD',
-        availableRooms: 6,
-      },
-    ],
-  },
-])
+// ── Counts for filter badges ──────────────────────────────
+const cRef = computed(() => HOTELS.filter(h => h.ref).length)
+const cRo = computed(() => HOTELS.filter(h => h.board === 'Room only').length)
+const cBf = computed(() => HOTELS.filter(h => h.board === 'Breakfast').length)
 
-// ── Filter Computations ────────────────────────────────────
-const filteredHotels = computed(() => {
-  return hotels.value.filter(h => {
-    // Hotel Name filter
-    if (hotelNameSearch.value && !h.name.toLowerCase().includes(hotelNameSearch.value.toLowerCase())) {
-      return false
-    }
-    // Star filter
-    if (selectedStars.value.length > 0 && !selectedStars.value.includes(h.stars)) {
-      return false
-    }
-    // Zone filter
-    if (selectedZone.value.length > 0 && !selectedZone.value.includes(h.zone)) {
-      return false
-    }
-    return true
-  }).sort((a, b) => {
-    if (sortBy.value === 'price-asc') return a.featuredRoom.totalPrice - b.featuredRoom.totalPrice
-    if (sortBy.value === 'price-desc') return b.featuredRoom.totalPrice - a.featuredRoom.totalPrice
-    if (sortBy.value === 'rating') return b.reviewScore - a.reviewScore
-    return 0 // default suggested
-  })
+// ── Filtered & Sorted Hotels ──────────────────────────────
+const filtered = computed(() => {
+  const q = filterQ.value.trim().toLowerCase()
+  let r = HOTELS.filter(h =>
+    h.n.toLowerCase().includes(q) &&
+    (!filterRef.value || h.ref) &&
+    (!filterBoards.value.size || filterBoards.value.has(h.board)) &&
+    (!filterStars.value.size || filterStars.value.has(h.s)) &&
+    h.total <= filterMax.value
+  )
+  if (sortBy.value === 'pa') {
+    r = [...r].sort((a, b) => a.total - b.total)
+  } else if (sortBy.value === 'pd') {
+    r = [...r].sort((a, b) => b.total - a.total)
+  }
+  return r
 })
 
-function toggleStarFilter(star: number) {
-  const idx = selectedStars.value.indexOf(star)
-  if (idx > -1) selectedStars.value.splice(idx, 1)
-  else selectedStars.value.push(star)
+const lowestPrice = computed(() => {
+  if (!filtered.value.length) return 0
+  return Math.min(...filtered.value.map(h => h.total))
+})
+
+// ── Active Chips Data ─────────────────────────────────────
+interface ActiveChip {
+  key: string
+  val: string | number
+  label: string
 }
 
-function toggleZoneFilter(zone: string) {
-  const idx = selectedZone.value.indexOf(zone)
-  if (idx > -1) selectedZone.value.splice(idx, 1)
-  else selectedZone.value.push(zone)
+const activeChips = computed<ActiveChip[]>(() => {
+  const list: ActiveChip[] = []
+  if (filterQ.value.trim()) {
+    list.push({ key: 'q', val: filterQ.value, label: `“${filterQ.value.trim()}”` })
+  }
+  if (filterRef.value) {
+    list.push({ key: 'ref', val: '', label: 'Refundable' })
+  }
+  filterBoards.value.forEach(b => {
+    list.push({ key: 'b', val: b, label: b === 'Breakfast' ? 'Free breakfast' : b })
+  })
+  filterStars.value.forEach(s => {
+    list.push({ key: 's', val: s, label: `${s} ★` })
+  })
+  if (filterMax.value < 3000) {
+    list.push({ key: 'max', val: filterMax.value, label: `Up to ${filterMax.value.toLocaleString('en-US')} USD` })
+  }
+  return list
+})
+
+function removeChip(chip: ActiveChip) {
+  if (chip.key === 'q') filterQ.value = ''
+  else if (chip.key === 'ref') filterRef.value = false
+  else if (chip.key === 'b') {
+    const next = new Set(filterBoards.value)
+    next.delete(String(chip.val))
+    filterBoards.value = next
+  } else if (chip.key === 's') {
+    const next = new Set(filterStars.value)
+    next.delete(Number(chip.val))
+    filterStars.value = next
+  } else if (chip.key === 'max') {
+    filterMax.value = 3000
+  }
 }
 
-function formatPrice(n: number) {
-  return new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n)
+function toggleBoard(board: string, checked: boolean) {
+  const next = new Set(filterBoards.value)
+  if (checked) next.add(board)
+  else next.delete(board)
+  filterBoards.value = next
+}
+
+function toggleStar(n: number) {
+  const next = new Set(filterStars.value)
+  if (next.has(n)) next.delete(n)
+  else next.add(n)
+  filterStars.value = next
+}
+
+function clearFilters() {
+  filterQ.value = ''
+  filterRef.value = false
+  filterBoards.value = new Set()
+  filterStars.value = new Set()
+  filterMax.value = 3000
+  sortBy.value = 's'
+}
+
+function money(v: number): string {
+  return v.toLocaleString('en-US', { minimumFractionDigits: 2 })
+}
+
+function exportExcel() {
+  showToast(`Exporting ${filtered.value.length} hotels to Excel...`)
 }
 </script>
 
 <template>
-  <div class="results-page">
-
-    <!-- ── Top Search Modifier Bar (Sticky subheader) ──────── -->
-    <div class="search-summary-bar">
-      <div class="summary-left">
-        <div class="summary-pill">
-          <span class="dest-strong">{{ destination }}</span>
-        </div>
-        <div class="summary-pill">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="3" y="4" width="18" height="18" rx="2" />
-            <line x1="16" y1="2" x2="16" y2="6" />
-            <line x1="8" y1="2" x2="8" y2="6" />
-            <line x1="3" y1="10" x2="21" y2="10" />
+  <div class="hotel-results-page">
+    <!-- Search summary bar -->
+    <section class="sum">
+      <div class="wrap sum-wrap">
+        <span class="dest">
+          <svg class="i" viewBox="0 0 24 24">
+            <path d="M12 21s-7-6.2-7-11a7 7 0 0114 0c0 4.8-7 11-7 11z" />
+            <circle cx="12" cy="10" r="2.5" />
           </svg>
-          <span>{{ datesText }}</span>
-        </div>
-        <div class="summary-pill">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
-            <circle cx="12" cy="7" r="4" />
+          {{ destination }}
+        </span>
+        <span class="m">
+          <svg class="i" viewBox="0 0 24 24">
+            <rect x="3" y="5" width="18" height="16" rx="2" />
+            <path d="M3 10h18M8 3v4M16 3v4" />
           </svg>
-          <span>{{ guestsText }}</span>
-        </div>
-        <RouterLink to="/hotels" class="modify-btn">
-          Modify search
-        </RouterLink>
+          {{ datesText }}
+        </span>
+        <span class="m">
+          <svg class="i" viewBox="0 0 24 24">
+            <circle cx="12" cy="8" r="4" />
+            <path d="M4 21c0-4 3.6-7 8-7s8 3 8 7" />
+          </svg>
+          {{ guestsText }}
+        </span>
+        <RouterLink to="/hotels" class="btn primary sm sp">Modify search</RouterLink>
       </div>
+    </section>
 
-      <div class="summary-right">
-        <!-- AI Destination Assistant Chip (Awan Brand Touch) -->
-        <button class="ai-assistant-btn" @click="showAiSummary = !showAiSummary">
-          <span class="sparkle-icon">✨</span>
-          <span>AI Destination Assistant</span>
-        </button>
-      </div>
-    </div>
-
-    <!-- ── Main Results Viewport (Sidebar + Results) ───────── -->
-    <div class="results-layout">
-
-      <!-- ── Left Filters Sidebar ────────────────────────────── -->
-      <aside class="filters-sidebar">
-        <!-- Hotel Count Header in Sidebar -->
-        <div class="sidebar-header">
-          <span class="hotels-count">{{ filteredHotels.length }} Hotels</span>
-          <button class="export-excel-link" title="Export list to Excel">Export to Excel</button>
-        </div>
-
-        <!-- Filter 1: Search by Name -->
-        <div class="filter-box">
-          <h4 class="filter-title">Hotel Name</h4>
-          <div class="search-input-wrap">
+    <!-- Layout: Filters sidebar + Main results -->
+    <div class="wrap page">
+      <!-- Sidebar Filters -->
+      <aside class="side" :class="{ open: sideOpen }" aria-label="Filters">
+        <div class="fg">
+          <h3>Hotel name</h3>
+          <div class="search">
             <input
-              type="text"
-              v-model="hotelNameSearch"
-              placeholder="Search hotel name..."
-              class="filter-input"
+              v-model="filterQ"
+              type="search"
+              placeholder="Hotel name"
+              aria-label="Hotel name"
             />
-            <button class="filter-search-icon-btn">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                <circle cx="11" cy="11" r="8" />
-                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            <button type="button" aria-label="Search">
+              <svg class="i" viewBox="0 0 24 24">
+                <circle cx="11" cy="11" r="7" />
+                <path d="M20 20l-4-4" />
               </svg>
             </button>
           </div>
         </div>
 
-        <!-- Filter 2: Top Products -->
-        <div class="filter-box">
-          <h4 class="filter-title">Top product</h4>
-          <div class="checkbox-list">
-            <label class="check-item">
-              <input type="checkbox" value="luxury" v-model="selectedTopProducts" />
-              <span class="check-label">Luxury Collection</span>
-              <span class="check-count">157</span>
-            </label>
-            <label class="check-item">
-              <input type="checkbox" value="popular" v-model="selectedTopProducts" />
-              <span class="check-label">Most popular</span>
-              <span class="check-count">61</span>
-            </label>
-            <label class="check-item">
-              <input type="checkbox" value="preferred" v-model="selectedTopProducts" />
-              <span class="check-label">Preferred Partner</span>
-              <span class="check-count">122</span>
-            </label>
+        <div class="fg">
+          <h3>Cancellation</h3>
+          <label class="ck">
+            <input type="checkbox" v-model="filterRef" />
+            Refundable <span class="c">{{ cRef }}</span>
+          </label>
+        </div>
+
+        <div class="fg">
+          <h3>Board</h3>
+          <label class="ck">
+            <input
+              type="checkbox"
+              :checked="filterBoards.has('Room only')"
+              @change="toggleBoard('Room only', ($event.target as HTMLInputElement).checked)"
+            />
+            Room only <span class="c">{{ cRo }}</span>
+          </label>
+          <label class="ck">
+            <input
+              type="checkbox"
+              :checked="filterBoards.has('Breakfast')"
+              @change="toggleBoard('Breakfast', ($event.target as HTMLInputElement).checked)"
+            />
+            Free breakfast <span class="c">{{ cBf }}</span>
+          </label>
+        </div>
+
+        <div class="fg">
+          <h3>Max total price</h3>
+          <input
+            type="range"
+            min="1500"
+            max="3000"
+            step="50"
+            v-model.number="filterMax"
+            aria-label="Max total price"
+          />
+          <div class="pr">
+            <span>1,500</span>
+            <b><span>{{ filterMax.toLocaleString('en-US') }}</span> USD</b>
           </div>
         </div>
 
-        <!-- Filter 3: Board Basis -->
-        <div class="filter-box">
-          <h4 class="filter-title">Board Basis</h4>
-          <div class="checkbox-list">
-            <label class="check-item">
-              <input type="checkbox" value="ai" v-model="selectedBoards" />
-              <span class="check-label">All inclusive</span>
-              <span class="check-count">12</span>
-            </label>
-            <label class="check-item">
-              <input type="checkbox" value="hb" v-model="selectedBoards" />
-              <span class="check-label">Half board</span>
-              <span class="check-count">105</span>
-            </label>
-            <label class="check-item">
-              <input type="checkbox" value="bb" v-model="selectedBoards" />
-              <span class="check-label">Breakfast included</span>
-              <span class="check-count">1,376</span>
-            </label>
-            <label class="check-item">
-              <input type="checkbox" value="ro" v-model="selectedBoards" />
-              <span class="check-label">Room only</span>
-              <span class="check-count">420</span>
-            </label>
-          </div>
-        </div>
-
-        <!-- Filter 4: Category (Star Rating) -->
-        <div class="filter-box">
-          <h4 class="filter-title">Category</h4>
-          <div class="star-rating-buttons">
+        <div class="fg">
+          <h3>Category</h3>
+          <div class="stbtns">
             <button
-              v-for="s in [1, 2, 3, 4, 5]"
-              :key="s"
-              class="star-toggle-btn"
-              :class="{ 'star-toggle-btn--active': selectedStars.includes(s) }"
-              @click="toggleStarFilter(s)"
+              v-for="n in [1, 2, 3, 4, 5]"
+              :key="n"
+              type="button"
+              :aria-pressed="filterStars.has(n) ? 'true' : 'false'"
+              :aria-label="`${n} star`"
+              @click="toggleStar(n)"
             >
-              {{ s }} ★
+              {{ n }}
+              <svg viewBox="0 0 24 24">
+                <path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.9L12 17.8 5.8 21l1.2-6.9-5-4.9 6.9-1z" />
+              </svg>
             </button>
           </div>
         </div>
 
-        <!-- Filter 5: Zone / Area -->
-        <div class="filter-box">
-          <h4 class="filter-title">Zone / Area</h4>
-          <div class="checkbox-list">
-            <label class="check-item">
-              <input type="checkbox" :checked="selectedZone.includes('Sultanahmet')" @change="toggleZoneFilter('Sultanahmet')" />
-              <span class="check-label">Sultanahmet (Old City)</span>
-              <span class="check-count">142</span>
-            </label>
-            <label class="check-item">
-              <input type="checkbox" :checked="selectedZone.includes('Taksim')" @change="toggleZoneFilter('Taksim')" />
-              <span class="check-label">Taksim / Beyoglu</span>
-              <span class="check-count">210</span>
-            </label>
-            <label class="check-item">
-              <input type="checkbox" :checked="selectedZone.includes('Eminonu')" @change="toggleZoneFilter('Eminonu')" />
-              <span class="check-label">Eminonu / Sirkeci</span>
-              <span class="check-count">65</span>
-            </label>
-            <label class="check-item">
-              <input type="checkbox" :checked="selectedZone.includes('Besiktas')" @change="toggleZoneFilter('Besiktas')" />
-              <span class="check-label">Besiktas / Bosphorus</span>
-              <span class="check-count">88</span>
-            </label>
-          </div>
-        </div>
+        <button type="button" class="clear" @click="clearFilters">Clear all filters</button>
       </aside>
 
-      <!-- ── Right Results Feed ──────────────────────────────── -->
-      <main class="results-main">
-
-        <!-- Results Toolbar: Sorting & Map toggle -->
-        <div class="results-toolbar">
-          <div class="toolbar-left">
-            <span class="results-count-text">
-              Showing <strong>{{ filteredHotels.length }}</strong> verified B2B properties
-            </span>
-          </div>
-
-          <div class="toolbar-right">
-            <!-- Sort dropdown -->
-            <div class="sort-selector">
-              <label class="sort-label">Sort by</label>
-              <select v-model="sortBy" class="sort-select">
-                <option value="suggested">Suggested (Best Value)</option>
-                <option value="price-asc">Price: Low to High</option>
-                <option value="price-desc">Price: High to Low</option>
-                <option value="rating">Guest Rating</option>
-              </select>
-            </div>
-
-            <!-- Results Count (Like Bedsonline) -->
-            <div class="sort-selector">
-              <label class="sort-label">Results</label>
-              <select v-model="resultsPerPage" class="sort-select" style="min-width: 65px">
-                <option :value="20">20</option>
-                <option :value="50">50</option>
-                <option :value="100">100</option>
-              </select>
-            </div>
-
-            <!-- Show Map Button -->
-            <button class="map-view-btn" @click="showMapModal = !showMapModal">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6" />
-                <line x1="8" y1="2" x2="8" y2="18" />
-                <line x1="16" y1="6" x2="16" y2="22" />
-              </svg>
-              <span>Show map</span>
-            </button>
-          </div>
+      <!-- Main Results Area -->
+      <main>
+        <div class="bar">
+          <span class="cnt">{{ filtered.length }} {{ filtered.length === 1 ? 'hotel' : 'hotels' }}</span>
+          <a href="#" @click.prevent="exportExcel">Export to Excel</a>
+          <span class="sp"></span>
+          <label for="sort">Sort by</label>
+          <select class="sel" id="sort" v-model="sortBy">
+            <option value="s">Suggested</option>
+            <option value="pa">Price: low to high</option>
+            <option value="pd">Price: high to low</option>
+          </select>
+          <label for="per">Results</label>
+          <select class="sel s" id="per" v-model="resultsPerPage">
+            <option :value="20">20</option>
+            <option :value="50">50</option>
+          </select>
+          <button type="button" class="btn ghost mf" @click="sideOpen = !sideOpen">
+            Filters
+          </button>
+          <button type="button" class="btn ghost" style="height:38px">
+            Show map
+          </button>
         </div>
 
-        <!-- AI Destination Summary Banner (Inspired by screenshot) -->
-        <div v-if="showAiSummary" class="ai-summary-card">
-          <div class="ai-header">
-            <div class="ai-badge-title">
-              <span class="sparkle-icon">✨</span>
-              <strong>AI Travel Insights for Istanbul</strong>
-              <span class="ai-tag">Real-time B2B Advisory</span>
-            </div>
-            <button class="ai-dismiss-btn" @click="showAiSummary = false">Hide ⌃</button>
-          </div>
-          <p class="ai-text">
-            Sultanahmet and Eminonu are seeing high occupancy due to cultural season. Average 5-star wholesale rate is <strong>LYD 780–920/night</strong> with strong demand for Bosphorus-facing suites. Free cancellation options are advised for corporate bookings.
-          </p>
-        </div>
-
-        <!-- Hotels List -->
-        <div class="hotels-stack">
-          <div
-            v-for="hotel in filteredHotels"
-            :key="hotel.id"
-            class="hotel-result-card"
+        <!-- Filter Chips -->
+        <div v-if="activeChips.length" class="chips">
+          <button
+            v-for="chip in activeChips"
+            :key="chip.key + chip.val"
+            type="button"
+            class="chp"
+            :aria-label="'Remove ' + chip.label"
+            @click="removeChip(chip)"
           >
-            <!-- Card Body: 3-column Layout (Photo | Details | Price & CTA) -->
-            <div class="card-horizontal-grid">
-
-              <!-- Column 1: Image & Wishlist -->
-              <div class="hotel-photo-col">
-                <img :src="hotel.image" :alt="hotel.name" class="hotel-img" loading="lazy" />
-                <!-- Favorite / Wishlist Heart Icon -->
-                <button
-                  class="favorite-circle-btn"
-                  :class="{ 'favorite-circle-btn--active': favorites.includes(hotel.id) }"
-                  @click.stop="toggleFavorite(hotel.id)"
-                  title="Save to favorites"
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" :fill="favorites.includes(hotel.id) ? '#ef4444' : 'none'" stroke="currentColor" stroke-width="2">
-                    <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
-                  </svg>
-                </button>
-              </div>
-
-              <!-- Column 2: Hotel Details -->
-              <div class="hotel-details-col">
-                <!-- Top Badge (Luxury Collection, etc.) -->
-                <div v-if="hotel.badge" class="luxury-badge">
-                  {{ hotel.badge }}
-                </div>
-
-                <!-- Hotel Name & Stars -->
-                <div class="title-stars-row">
-                  <h3 class="hotel-name">{{ hotel.name }}</h3>
-                  <div class="stars-stars">
-                    <span v-for="s in hotel.stars" :key="s" class="star-icon">★</span>
-                  </div>
-                </div>
-
-                <!-- Location -->
-                <div class="location-row">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 1118 0z" />
-                    <circle cx="12" cy="10" r="3" />
-                  </svg>
-                  <span class="location-text">{{ hotel.location }}</span>
-                  <a href="#map" class="map-link">View on map</a>
-                </div>
-
-                <!-- Promo & Partner Tags -->
-                <div class="tags-row">
-                  <span
-                    v-for="tag in hotel.tags"
-                    :key="tag"
-                    class="tag-pill"
-                  >
-                    {{ tag }}
-                  </span>
-                </div>
-
-                <!-- Amenities Row with Icons -->
-                <div class="amenities-row">
-                  <span
-                    v-for="(am, aIdx) in hotel.amenities"
-                    :key="aIdx"
-                    class="amenity-item"
-                  >
-                    <span class="am-icon">{{ am.icon }}</span>
-                    <span>{{ am.label }}</span>
-                  </span>
-                </div>
-
-                <!-- Reviews Row & Compare -->
-                <div class="reviews-bottom-row">
-                  <div class="rating-badge-group">
-                    <span class="score-pill">{{ hotel.reviewScore }}</span>
-                    <span class="review-status">{{ hotel.reviewText }}</span>
-                    <span class="review-count">({{ hotel.reviewCount }} verified reviews)</span>
-                  </div>
-                  <button class="compare-btn" title="Add to comparison">Compare</button>
-                </div>
-              </div>
-
-              <!-- Column 3: Price Box & CTA Button -->
-              <div class="hotel-pricing-col">
-                <div class="room-preview-header">
-                  <span class="room-type-title">{{ hotel.featuredRoom.name }}</span>
-                  <span class="board-type-tag">{{ hotel.featuredRoom.board }}</span>
-                </div>
-
-                <div class="price-container">
-                  <span class="stay-total-label">3 nights total (incl. taxes)</span>
-                  <div class="price-figures">
-                    <span class="curr">{{ hotel.featuredRoom.currency }}</span>
-                    <span class="amount">{{ formatPrice(hotel.featuredRoom.totalPrice) }}</span>
-                  </div>
-                  <span class="price-per-night">
-                    LYD {{ formatPrice(hotel.featuredRoom.pricePerNight) }} / night
-                  </span>
-                </div>
-
-                <div class="cancellation-info">
-                  <span
-                    class="cancellation-text"
-                    :class="{ 'cancellation-text--green': hotel.featuredRoom.isFreeCancellation }"
-                  >
-                    {{ hotel.featuredRoom.isFreeCancellation ? '✓ ' : 'ⓘ ' }}
-                    {{ hotel.featuredRoom.cancellation }}
-                  </span>
-                </div>
-
-                <!-- View Rooms Accordion Button -->
-                <button
-                  class="view-rooms-btn"
-                  @click="toggleRooms(hotel.id)"
-                >
-                  <span>{{ expandedHotelId === hotel.id ? 'Hide rooms ▴' : 'View rooms ▾' }}</span>
-                </button>
-              </div>
-
-            </div>
-
-            <!-- Expanded Room Selection Table (When clicked) -->
-            <div v-if="expandedHotelId === hotel.id" class="rooms-expand-section">
-              <h4 class="rooms-table-title">Available Contracted Rooms & Rates</h4>
-              <div class="rooms-table">
-                <div
-                  v-for="room in hotel.rooms"
-                  :key="room.id"
-                  class="room-row"
-                >
-                  <div class="room-col-name">
-                    <span class="r-name">{{ room.name }}</span>
-                    <span class="r-board">{{ room.board }}</span>
-                    <span class="r-avail">Only {{ room.availableRooms }} rooms left</span>
-                  </div>
-                  <div class="room-col-policy">
-                    <span
-                      class="r-cancel"
-                      :class="{ 'r-cancel--green': room.isFreeCancellation }"
-                    >
-                      {{ room.cancellation }}
-                    </span>
-                  </div>
-                  <div class="room-col-price">
-                    <span class="r-total">LYD {{ formatPrice(room.totalPrice) }}</span>
-                    <span class="r-sub">LYD {{ formatPrice(room.pricePerNight) }} / night</span>
-                  </div>
-                  <div class="room-col-action">
-                    <button class="book-now-btn">Book Now</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-          </div>
+            {{ chip.label }}
+            <svg class="i" viewBox="0 0 24 24">
+              <path d="M6 6l12 12M18 6L6 18" />
+            </svg>
+          </button>
         </div>
 
-      </main>
+        <!-- Hotels list -->
+        <div class="list">
+          <article
+            class="card"
+            v-for="(h, i) in filtered"
+            :key="h.n"
+            :class="{ open: openHotelName === h.n }"
+            :style="{ '--i': i }"
+          >
+            <!-- Photo & Badges -->
+            <div class="photo">
+              <img :alt="h.n" :src="h.img" />
+              <button
+                type="button"
+                class="fav"
+                :aria-pressed="favs.has(h.n) ? 'true' : 'false'"
+                :aria-label="'Save ' + h.n + ' to favorites'"
+                @click.stop="toggleFav(h.n)"
+              >
+                <svg class="i" viewBox="0 0 24 24">
+                  <path d="M12 20s-7-4.4-9-9a5 5 0 019-3 5 5 0 019 3c-2 4.6-9 9-9 9z" />
+                </svg>
+              </button>
+              <span v-if="h.total === lowestPrice && filtered.length > 1" class="rib">
+                Lowest price
+              </span>
+            </div>
 
+            <!-- Main Content -->
+            <div class="main">
+              <h2 class="title">
+                {{ h.n }}
+                <span class="stars">
+                  <svg v-for="starIdx in h.s" :key="starIdx" viewBox="0 0 24 24">
+                    <path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.9L12 17.8 5.8 21l1.2-6.9-5-4.9 6.9-1z" />
+                  </svg>
+                </span>
+              </h2>
+
+              <span class="room">
+                <svg class="i" viewBox="0 0 24 24">
+                  <path d="M3 18v-7a2 2 0 012-2h14a2 2 0 012 2v7M3 15h18M7 9V7a1 1 0 011-1h8a1 1 0 011 1v2" />
+                </svg>
+                {{ h.room }}
+              </span>
+
+              <ul class="amen">
+                <li v-for="(a, idx) in h.am.split(' · ')" :key="idx">
+                  <svg class="i" viewBox="0 0 24 24">
+                    <path d="M5 12.5l4.5 4.5L19 7.5" />
+                  </svg>
+                  {{ a[0].toUpperCase() + a.slice(1) }}
+                </li>
+              </ul>
+
+              <div class="tags">
+                <span class="tag t1">
+                  <svg class="i" viewBox="0 0 24 24">
+                    <path d="M12 3l9 5-9 5-9-5z" />
+                    <path d="M3 13l9 5 9-5" />
+                  </svg>
+                  {{ h.opts }} room options
+                </span>
+
+                <span v-if="h.board === 'Room only'" class="tag t2">
+                  <svg class="i" viewBox="0 0 24 24">
+                    <path d="M7 3v8M4.5 3v4a2.5 2.5 0 005 0V3M7 11v10M17 3c-2 2-3 5-3 8h3v10" />
+                  </svg>
+                  Room only
+                </span>
+                <span v-else class="tag t5">
+                  <svg class="i" viewBox="0 0 24 24">
+                    <path d="M4 8h13v6a5 5 0 01-5 5H9a5 5 0 01-5-5zM17 10h2a2 2 0 010 4h-2M7 2v2M11 2v2" />
+                  </svg>
+                  Breakfast included
+                </span>
+
+                <span v-if="h.ref" class="seg">
+                  <span class="a">
+                    <svg class="i" viewBox="0 0 24 24">
+                      <path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z" />
+                      <path d="M8.5 12l2.5 2.5 4.5-5" />
+                    </svg>
+                    Refundable
+                  </span>
+                  <span class="b ar" dir="rtl">
+                    <svg class="i" viewBox="0 0 24 24">
+                      <rect x="3" y="5" width="18" height="16" rx="2" />
+                      <path d="M3 10h18M8 3v4M16 3v4M9 15l2 2 4-4" />
+                    </svg>
+                    إلغاء مجاني حتى 29 يناير
+                  </span>
+                </span>
+              </div>
+            </div>
+
+            <!-- Pricing Sidebar -->
+            <div class="cside">
+              <div class="tl">
+                <span class="ar">الإجمالي</span>
+                <i>·</i>
+                <span>{{ nightsCount }} nights</span>
+              </div>
+              <div class="price mono">
+                {{ money(h.total) }}<small>USD</small>
+              </div>
+              <div class="pn mono">
+                <b>{{ h.night }} USD</b> / night
+              </div>
+              <div class="fees">
+                <svg class="i" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="9" />
+                  <path d="M8 12.5l2.7 2.7L16 9.5" />
+                </svg>
+                Taxes &amp; fees included
+              </div>
+              <div class="actions">
+                <button
+                  type="button"
+                  class="btn primary"
+                  :aria-expanded="openHotelName === h.n ? 'true' : 'false'"
+                  @click="toggleRooms(h.n)"
+                >
+                  {{ openHotelName === h.n ? 'Hide rooms' : 'View rooms' }}
+                </button>
+                <button type="button" class="btn ghost" @click="addBooking(h.n)">
+                  Book
+                </button>
+              </div>
+            </div>
+
+            <!-- Expandable Rooms Drawer -->
+            <div class="rooms">
+              <div class="rbox">
+                <div class="rhead">
+                  Available rooms
+                  <span>{{ nightsCount }} nights · {{ guestsText }}</span>
+                </div>
+
+                <div
+                  v-for="(x, j) in h.rooms"
+                  :key="j"
+                  class="rrow"
+                  :style="{ '--j': j }"
+                >
+                  <div class="ri">
+                    <svg class="i" viewBox="0 0 24 24">
+                      <path d="M3 18v-7a2 2 0 012-2h14a2 2 0 012 2v7M3 15h18M7 9V7a1 1 0 011-1h8a1 1 0 011 1v2" />
+                    </svg>
+                  </div>
+                  <div class="rn">
+                    <b>{{ x[0] }}</b>
+                    <div class="rm">
+                      <span v-if="x[1] === 'Room only'" class="tag t2">
+                        <svg class="i" viewBox="0 0 24 24">
+                          <path d="M7 3v8M4.5 3v4a2.5 2.5 0 005 0V3M7 11v10M17 3c-2 2-3 5-3 8h3v10" />
+                        </svg>
+                        Room only
+                      </span>
+                      <span v-else class="tag t5">
+                        <svg class="i" viewBox="0 0 24 24">
+                          <path d="M4 8h13v6a5 5 0 01-5 5H9a5 5 0 01-5-5zM17 10h2a2 2 0 010 4h-2M7 2v2M11 2v2" />
+                        </svg>
+                        Breakfast included
+                      </span>
+                      <span class="rc">
+                        <svg class="i" viewBox="0 0 24 24">
+                          <path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z" />
+                          <path d="M8.5 12l2.5 2.5 4.5-5" />
+                        </svg>
+                        Free cancellation until 29 Jan
+                      </span>
+                    </div>
+                  </div>
+                  <div class="rp">
+                    <b class="mono">{{ money(x[2]) }}<small>USD</small></b>
+                    <span>{{ Math.round(x[2] / nightsCount) }} USD / night</span>
+                  </div>
+                  <button type="button" class="btn primary" @click="addBooking(h.n + ' - ' + x[0])">
+                    Book
+                  </button>
+                </div>
+
+                <button v-if="h.opts > h.rooms.length" type="button" class="rmore">
+                  + {{ h.opts - h.rooms.length }} more room options
+                </button>
+              </div>
+            </div>
+          </article>
+
+          <!-- Empty state -->
+          <div v-if="filtered.length === 0" class="empty">
+            <b>No hotels match these filters</b>
+            Try removing a filter or clearing them all.
+          </div>
+        </div>
+      </main>
     </div>
 
+    <!-- Toast Notification -->
+    <div class="toast" :class="{ on: toastVisible }" role="status" aria-live="polite">
+      {{ toastMessage }}
+    </div>
   </div>
 </template>
 
 <style scoped>
-.results-page {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
+.hotel-results-page {
+  --page: #f7f8fa;
+  --card: #fff;
+  --line: #e4e7ec;
+  --ink: #0f172a;
+  --mute: #8791ab;
+  --mute2: #9aa3b8;
+  --sub: #475169;
+  --chip-bg: #f5f7fb;
+  --chip-line: #e6eaf2;
+  --chip-ink: #2d3648;
+  --btn: #5b81d0;
+  --btn-ink: #fff;
+  --btn-line: #5b81d0;
+  --btn-soft: #e6effb;
+  --t1-bg: #ebedfe;
+  --t1-ink: #4a4fc9;
+  --t2-bg: #f0f2f5;
+  --t2-ink: #364152;
+  --t3-bg: #e3f6ec;
+  --t3-ink: #0d8a58;
+  --t4-bg: #e6effb;
+  --t4-ink: #1f66b3;
+  --star: #f5b829;
+  color-scheme: light;
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  color: var(--ink);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+  background: radial-gradient(900px 320px at 50% -120px, #e2eafc, transparent 70%), var(--page);
+  background-repeat: no-repeat;
 }
 
-/* ── Top Summary / Modify Bar ──────────────────────────── */
-.search-summary-bar {
-  background: #ffffff;
-  border: 1px solid var(--color-border);
-  border-radius: 14px;
-  padding: 12px 20px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  box-shadow: 0 2px 8px rgba(31, 43, 56, 0.04);
+.mono {
+  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
-.summary-left {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
+.ar {
+  font-family: "Noto Sans Arabic", Inter, system-ui, sans-serif;
 }
 
-.summary-pill {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.9rem;
-  color: var(--color-text);
-  font-weight: 500;
-}
-
-.dest-strong {
-  font-weight: 700;
-  font-size: 1rem;
-  color: var(--color-text);
-}
-
-.modify-btn {
-  padding: 6px 14px;
-  border: 1.5px solid var(--color-primary);
-  color: var(--color-primary);
-  border-radius: 8px;
-  font-size: 0.85rem;
-  font-weight: 600;
+a {
+  color: var(--btn);
   text-decoration: none;
-  transition: all 0.15s ease;
-}
-.modify-btn:hover {
-  background: var(--color-primary);
-  color: #ffffff;
 }
 
-.ai-assistant-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  background: #fdf4ff;
-  border: 1px solid #f0abfc;
-  color: #a21caf;
-  border-radius: 9999px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-.ai-assistant-btn:hover {
-  background: #fae8ff;
+button, input, select {
+  font: inherit;
+  color: inherit;
 }
 
-/* ── Layout ────────────────────────────────────────────── */
-.results-layout {
-  display: flex;
-  align-items: flex-start;
-  gap: 24px;
+:focus-visible {
+  outline: 2px solid var(--btn);
+  outline-offset: 2px;
 }
 
-/* ── Sidebar Filters ───────────────────────────────────── */
-.filters-sidebar {
-  width: 270px;
-  background: #ffffff;
-  border: 1px solid var(--color-border);
-  border-radius: 14px;
-  padding: 20px 18px;
-  box-shadow: 0 2px 8px rgba(31, 43, 56, 0.04);
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  flex-shrink: 0;
+.wrap {
+  max-width: 1344px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+svg.i {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex: none;
+}
+
+/* search summary */
+.sum {
   position: sticky;
-  top: 90px;
-}
-
-.sidebar-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-bottom: 1px solid var(--color-border);
-  padding-bottom: 12px;
-}
-
-.hotels-count {
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: var(--color-text);
-}
-
-.export-excel-link {
-  background: none;
-  border: none;
-  color: var(--color-primary);
-  font-size: 0.8rem;
-  font-weight: 600;
-  cursor: pointer;
-  text-decoration: underline;
-}
-
-.filter-box {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  border-bottom: 1px solid #f1f5f9;
-  padding-bottom: 16px;
-}
-.filter-box:last-child {
-  border-bottom: none;
-}
-
-.filter-title {
-  font-size: 0.88rem;
-  font-weight: 700;
-  color: var(--color-text);
-  margin: 0;
-}
-
-/* Search input */
-.search-input-wrap {
-  display: flex;
-  align-items: center;
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-  overflow: hidden;
-}
-.filter-input {
-  border: none;
-  outline: none;
-  padding: 8px 10px;
-  font-size: 0.85rem;
-  width: 100%;
-}
-.filter-search-icon-btn {
-  background: #f8fafc;
-  border: none;
-  border-left: 1px solid var(--color-border);
-  padding: 8px 10px;
-  cursor: pointer;
-  color: var(--color-text-muted);
-}
-
-/* Checkbox list */
-.checkbox-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.check-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 0.84rem;
-  color: var(--color-text);
-  cursor: pointer;
-}
-.check-item input {
-  accent-color: var(--color-primary);
-  width: 15px;
-  height: 15px;
-  cursor: pointer;
-}
-.check-label {
-  flex: 1;
-}
-.check-count {
-  font-size: 0.75rem;
-  color: var(--color-text-muted);
-}
-
-/* Star Buttons */
-.star-rating-buttons {
-  display: flex;
-  gap: 6px;
-}
-.star-toggle-btn {
-  flex: 1;
-  padding: 6px 0;
-  background: #ffffff;
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--color-text);
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-.star-toggle-btn:hover {
-  border-color: var(--color-primary);
-}
-.star-toggle-btn--active {
-  background: var(--color-primary-light);
-  border-color: var(--color-primary);
-  color: var(--color-primary);
-}
-
-/* ── Right Results Main ────────────────────────────────── */
-.results-main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  min-width: 0;
-}
-
-/* Toolbar */
-.results-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: #ffffff;
-  border: 1px solid var(--color-border);
+  top: 0;
+  z-index: 20;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: saturate(1.5) blur(14px);
+  -webkit-backdrop-filter: saturate(1.5) blur(14px);
+  border: 1px solid var(--line);
   border-radius: 12px;
-  padding: 12px 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 10px rgba(16, 24, 40, 0.04);
 }
 
-.results-count-text {
-  font-size: 0.9rem;
-  color: var(--color-text-muted);
-}
-
-.toolbar-right {
+.sum .sum-wrap {
   display: flex;
   align-items: center;
   gap: 16px;
+  min-height: 64px;
+  flex-wrap: wrap;
+  padding: 10px 16px;
 }
 
-.sort-selector {
+.sum .dest {
   display: flex;
   align-items: center;
   gap: 8px;
-}
-.sort-label {
-  font-size: 0.85rem;
-  color: var(--color-text-muted);
-}
-.sort-select {
-  padding: 6px 12px;
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-  font-size: 0.85rem;
-  color: var(--color-text);
-  background: #ffffff;
-  cursor: pointer;
-  outline: none;
-}
-
-.map-view-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 14px;
-  background: #ffffff;
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--color-text);
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-.map-view-btn:hover {
-  border-color: var(--color-primary);
-  color: var(--color-primary);
-}
-
-/* AI Destination Summary */
-.ai-summary-card {
-  background: #fdfaf5;
-  border: 1px solid #fde68a;
-  border-radius: 12px;
-  padding: 16px 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.ai-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.ai-badge-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.92rem;
-  color: #92400e;
-}
-.ai-tag {
-  background: #fef3c7;
-  color: #b45309;
-  font-size: 0.72rem;
+  font-size: 17px;
   font-weight: 700;
-  padding: 2px 8px;
-  border-radius: 9999px;
-  text-transform: uppercase;
+  letter-spacing: -0.2px;
 }
-.ai-dismiss-btn {
-  background: none;
-  border: none;
-  color: #92400e;
-  font-size: 0.82rem;
+
+.sum .dest svg {
+  color: var(--btn);
+  width: 18px;
+  height: 18px;
+}
+
+.sum .m {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--sub);
+  font-size: 13px;
+  padding: 7px 13px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--card);
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05);
+}
+
+.sum .m svg {
+  color: var(--btn);
+}
+
+.btn {
+  appearance: none;
+  font-size: 13.5px;
   font-weight: 600;
+  height: 40px;
+  border-radius: 7px;
   cursor: pointer;
-}
-.ai-text {
-  font-size: 0.88rem;
-  color: #78350f;
-  line-height: 1.5;
-  margin: 0;
-}
-
-/* ── Hotel Result Card ─────────────────────────────────── */
-.hotels-stack {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.hotel-result-card {
-  background: #ffffff;
-  border: 1px solid var(--color-border);
-  border-radius: 14px;
-  box-shadow: 0 2px 10px rgba(31, 43, 56, 0.05);
-  overflow: hidden;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-.hotel-result-card:hover {
-  box-shadow: 0 8px 24px rgba(31, 43, 56, 0.1);
-}
-
-/* Horizontal 3-column Grid matching the screenshot */
-.card-horizontal-grid {
-  display: grid;
-  grid-template-columns: 240px 1fr 240px;
-  min-height: 220px;
-}
-
-/* Column 1: Image */
-.hotel-photo-col {
-  position: relative;
-  overflow: hidden;
-  background: #1f2b38;
-}
-.hotel-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-  transition: transform 0.3s ease;
-}
-.hotel-result-card:hover .hotel-img {
-  transform: scale(1.03);
-}
-
-.favorite-circle-btn {
-  position: absolute;
-  top: 12px;
-  left: 12px;
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.9);
-  border: none;
-  cursor: pointer;
-  display: flex;
+  border: 1px solid var(--btn-line);
+  transition: filter 0.15s, background 0.15s, transform 0.1s;
+  padding: 0 16px;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: #4b5563;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-  transition: all 0.15s ease;
-}
-.favorite-circle-btn:hover {
-  transform: scale(1.1);
-  color: #ef4444;
-}
-.favorite-circle-btn--active {
-  color: #ef4444 !important;
+  text-decoration: none;
 }
 
-/* Column 2: Details */
-.hotel-details-col {
-  padding: 18px 22px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  border-right: 1px solid var(--color-border);
+.btn:active {
+  transform: scale(0.98);
 }
 
-.luxury-badge {
-  align-self: flex-start;
-  background: #1f2b38;
-  color: #ffffff;
-  font-size: 0.68rem;
-  font-weight: 800;
-  padding: 3px 10px;
-  border-radius: 4px;
-  letter-spacing: 0.05em;
+.btn.primary {
+  background: linear-gradient(180deg, #6a8fdc, #5278c8);
+  color: var(--btn-ink);
+  box-shadow: 0 6px 14px -6px rgba(82, 120, 200, 0.75);
+  border-color: #5278c8;
 }
 
-.title-stars-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
+.btn.primary:hover {
+  filter: brightness(1.07);
 }
 
-.hotel-name {
-  font-size: 1.25rem;
-  font-weight: 800;
-  color: var(--color-text);
-  margin: 0;
-  line-height: 1.3;
+.btn.ghost {
+  background: transparent;
+  color: var(--btn);
 }
 
-.stars-stars {
-  color: #f59e0b;
-  font-size: 1rem;
-  letter-spacing: 2px;
+.btn.ghost:hover {
+  background: var(--btn-soft);
 }
 
-.location-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.82rem;
-  color: var(--color-text-muted);
-}
-.map-link {
-  color: var(--color-primary);
-  margin-left: 6px;
-  font-weight: 500;
+.btn.sm {
+  height: 32px;
+  font-size: 12.5px;
+  padding: 0 12px;
 }
 
-.tags-row {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-.tag-pill {
-  padding: 3px 10px;
-  border: 1px solid var(--color-border);
-  border-radius: 9999px;
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: var(--color-secondary);
-  background: #f8fafc;
+.sum .sp {
+  margin-left: auto;
 }
 
-.amenities-row {
+/* layout */
+.page {
+  display: grid;
+  grid-template-columns: 250px 1fr;
+  gap: 28px;
+  padding-bottom: 40px;
+}
+
+.bar {
   display: flex;
   align-items: center;
   gap: 14px;
   flex-wrap: wrap;
-  font-size: 0.78rem;
-  color: var(--color-text-muted);
-  margin: 4px 0;
-}
-.amenity-item {
-  display: flex;
-  align-items: center;
-  gap: 4px;
+  margin: 6px 0 14px;
 }
 
-.reviews-bottom-row {
-  margin-top: auto;
+.bar .cnt {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.bar .sp {
+  margin-left: auto;
+}
+
+.bar label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--sub);
+}
+
+.sel {
+  height: 38px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  border-radius: 7px;
+  min-width: 140px;
+  cursor: pointer;
+}
+
+.sel.s {
+  min-width: 68px;
+}
+
+.mf {
+  display: none;
+}
+
+/* Filter chips */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: -4px 0 14px;
+}
+
+.chp {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 9px 0 12px;
+  border: 0;
+  border-radius: 999px;
+  background: #e6effb;
+  color: #2f5fb5;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.chp:hover {
+  background: #d7e5fa;
+}
+
+.chp svg {
+  width: 13px;
+  height: 13px;
+}
+
+/* filters sidebar */
+.side {
+  position: sticky;
+  top: 96px;
+  align-self: start;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 18px 18px 16px;
+}
+
+.side h3 {
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.fg {
+  margin-bottom: 24px;
+}
+
+.search {
+  display: flex;
+  gap: 0;
+}
+
+.search input {
+  flex: 1;
+  min-width: 0;
+  height: 38px;
+  padding: 0 11px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  border-radius: 7px 0 0 7px;
+}
+
+.search button {
+  width: 40px;
+  border: 1px solid var(--line);
+  border-left: 0;
+  background: var(--chip-bg);
+  border-radius: 0 7px 7px 0;
+  color: var(--mute);
+  cursor: pointer;
   display: flex;
   align-items: center;
+  justify-content: center;
+}
+
+.ck {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 0;
+  font-size: 13px;
+  color: var(--sub);
+  cursor: pointer;
+}
+
+.ck input {
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  border: 1.5px solid var(--mute2);
+  border-radius: 4px;
+  background: var(--card);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.ck input:checked {
+  background: var(--btn);
+  border-color: var(--btn);
+}
+
+.ck input:checked::after {
+  content: "";
+  width: 9px;
+  height: 5px;
+  border: 2px solid #fff;
+  border-top: 0;
+  border-right: 0;
+  transform: rotate(-45deg) translate(1px, -1px);
+}
+
+.ck span.c {
+  margin-left: auto;
+  color: var(--mute);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 12px;
+}
+
+input[type=range] {
+  width: 100%;
+  accent-color: var(--btn);
+  margin: 4px 0 0;
+}
+
+.pr {
+  display: flex;
   justify-content: space-between;
-  padding-top: 8px;
+  font-size: 12px;
+  color: var(--mute);
+  margin-top: 2px;
 }
 
-.rating-badge-group {
+.pr b {
+  color: var(--ink);
+}
+
+.stbtns {
+  display: flex;
+  gap: 6px;
+}
+
+.stbtns button {
+  flex: 1;
+  height: 36px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  font-size: 12.5px;
+  cursor: pointer;
+  color: var(--sub);
+  transition: all 0.15s ease;
+}
+
+.stbtns button svg {
+  width: 13px;
+  height: 13px;
+  fill: var(--star);
+}
+
+.stbtns button[aria-pressed="true"] {
+  border-color: var(--btn);
+  background: var(--btn-soft);
+  color: var(--btn);
+  font-weight: 600;
+}
+
+.clear {
+  background: none;
+  border: 0;
+  color: var(--btn);
+  cursor: pointer;
+  padding: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.clear:hover {
+  text-decoration: underline;
+}
+
+/* result cards */
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.card {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  min-height: 232px;
+  transition: transform 0.25s cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 0.25s, border-color 0.25s;
+  animation: up 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+  animation-delay: calc(var(--i, 0) * 80ms);
+}
+
+.card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 16px 36px -14px rgba(40, 70, 140, 0.3);
+  border-color: #cdd8ec;
+}
+
+.card.open {
+  border-color: #c3d3f0;
+}
+
+@keyframes up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+
+.photo {
+  position: relative;
+  flex: 0 0 240px;
+  background: var(--chip-bg);
+  overflow: hidden;
+}
+
+.photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top;
+  display: block;
+  transition: transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.card:hover .photo img {
+  transform: scale(1.06);
+}
+
+.fav {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 0;
+  background: rgba(255, 255, 255, 0.94);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  color: #475169;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  transition: transform 0.15s;
+  z-index: 2;
+}
+
+.fav:hover {
+  transform: scale(1.1);
+}
+
+.fav svg {
+  width: 18px;
+  height: 18px;
+}
+
+.fav[aria-pressed="true"] {
+  color: #e5484d;
+}
+
+.fav[aria-pressed="true"] svg {
+  fill: currentColor;
+  animation: pop 0.35s;
+}
+
+@keyframes pop {
+  50% {
+    transform: scale(1.4);
+  }
+}
+
+.rib {
+  position: absolute;
+  top: 12px;
+  right: 10px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: #0d8a58;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  box-shadow: 0 2px 8px rgba(13, 138, 88, 0.4);
+  z-index: 2;
+}
+
+.main {
+  flex: 1;
+  min-width: 0;
+  padding: 20px 24px 18px 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+.title {
   display: flex;
   align-items: center;
   gap: 8px;
-}
-.score-pill {
-  background: var(--color-primary);
-  color: #ffffff;
-  font-weight: 800;
-  font-size: 0.82rem;
-  padding: 3px 8px;
-  border-radius: 6px;
-}
-.review-status {
-  font-size: 0.82rem;
+  margin: 0;
+  font-size: 16px;
   font-weight: 700;
-  color: var(--color-text);
-}
-.review-count {
-  font-size: 0.78rem;
-  color: var(--color-text-muted);
+  letter-spacing: -0.1px;
 }
 
-.compare-btn {
-  padding: 4px 10px;
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
-  background: #ffffff;
-  font-size: 0.75rem;
-  color: var(--color-text);
-  cursor: pointer;
-}
-
-/* Column 3: Pricing & Booking Action */
-.hotel-pricing-col {
-  padding: 20px 18px;
-  background: #fbfcfe;
+.stars {
   display: flex;
-  flex-direction: column;
-  justify-content: space-between;
+  gap: 1px;
+  color: var(--star);
 }
 
-.room-preview-header {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-.room-type-title {
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: var(--color-text);
-  line-height: 1.3;
-}
-.board-type-tag {
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: var(--color-primary);
+.stars svg {
+  width: 15px;
+  height: 15px;
+  fill: currentColor;
 }
 
-.price-container {
-  display: flex;
-  flex-direction: column;
-  margin: 8px 0;
-}
-.stay-total-label {
-  font-size: 0.68rem;
-  color: var(--color-text-muted);
-  text-transform: uppercase;
-}
-.price-figures {
-  display: flex;
-  align-items: baseline;
-  gap: 4px;
-}
-.curr {
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: var(--color-text);
-}
-.amount {
-  font-size: 1.5rem;
-  font-weight: 900;
-  color: var(--color-text);
-  letter-spacing: -0.02em;
-}
-.price-per-night {
-  font-size: 0.75rem;
-  color: var(--color-text-muted);
-}
-
-.cancellation-info {
-  margin-bottom: 8px;
-}
-.cancellation-text {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #dc2626;
-}
-.cancellation-text--green {
-  color: #059669;
-}
-
-.view-rooms-btn {
-  width: 100%;
-  padding: 10px 16px;
-  background: var(--color-navy);
-  color: #ffffff;
-  border: none;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: background 0.15s ease;
-  text-align: center;
-}
-.view-rooms-btn:hover {
-  background: var(--color-navy-hover);
-}
-
-/* ── Expanded Rooms Accordion ───────────────────────────── */
-.rooms-expand-section {
-  border-top: 1px solid var(--color-border);
-  background: #f8fafc;
-  padding: 18px 24px;
-}
-
-.rooms-table-title {
-  font-size: 0.92rem;
-  font-weight: 700;
-  color: var(--color-text);
-  margin: 0 0 12px 0;
-}
-
-.rooms-table {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.room-row {
-  background: #ffffff;
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  padding: 12px 18px;
-  display: grid;
-  grid-template-columns: 2fr 1.5fr 1fr 120px;
+.room {
+  display: inline-flex;
   align-items: center;
-  gap: 16px;
-}
-
-.room-col-name {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.r-name {
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: var(--color-text);
-}
-.r-board {
-  font-size: 0.78rem;
-  color: var(--color-primary);
+  gap: 8px;
+  margin-top: 12px;
+  align-self: flex-start;
+  padding: 7px 11px;
+  background: var(--chip-bg);
+  border: 1px solid var(--chip-line);
+  border-radius: 8px;
+  font-size: 12.5px;
   font-weight: 600;
-}
-.r-avail {
-  font-size: 0.72rem;
-  color: #b45309;
+  color: var(--chip-ink);
 }
 
-.room-col-policy {
-  font-size: 0.8rem;
-}
-.r-cancel {
-  color: #dc2626;
-  font-weight: 500;
-}
-.r-cancel--green {
-  color: #059669;
+.room svg {
+  stroke: var(--mute);
+  width: 15px;
+  height: 15px;
 }
 
-.room-col-price {
+.amen {
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--sub);
+}
+
+.amen li {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.amen svg.i {
+  width: 13px;
+  height: 13px;
+  margin-top: 1px;
+  stroke: #2fa36f;
+  stroke-width: 2;
+}
+
+.tags {
+  margin-top: auto;
+  padding-top: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.tag svg.i, .seg svg.i {
+  width: 14px;
+  height: 14px;
+  stroke-width: 1.9;
+}
+
+.t1 {
+  background: #eef0ff;
+  border-color: #d9dcfb;
+  color: #4247c4;
+}
+
+.t2 {
+  background: #f1f3f7;
+  border-color: #e0e4eb;
+  color: #364152;
+}
+
+.t5 {
+  background: #fff5e0;
+  border-color: #f6e0b0;
+  color: #9a5a06;
+}
+
+.seg {
+  display: inline-flex;
+  height: 28px;
+  border: 1px solid #bfe6d2;
+  border-radius: 8px;
+  overflow: hidden;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.seg > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+}
+
+.seg .a {
+  background: #d5f3e4;
+  color: #0a7a50;
+}
+
+.seg .b {
+  background: #effaf5;
+  color: #0d8a58;
+  border-left: 1px solid #bfe6d2;
+}
+
+.cside {
+  flex: 0 0 220px;
+  margin: 16px 0;
+  padding: 2px 18px 0 22px;
+  border-left: 1px solid var(--line);
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-}
-.r-total {
-  font-size: 1.15rem;
-  font-weight: 800;
-  color: var(--color-text);
-}
-.r-sub {
-  font-size: 0.72rem;
-  color: var(--color-text-muted);
+  text-align: right;
 }
 
-.book-now-btn {
-  padding: 8px 16px;
-  background: var(--color-primary);
-  color: #ffffff;
-  border: none;
-  border-radius: 6px;
-  font-size: 0.85rem;
+.tl {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--sub);
+  direction: ltr;
+}
+
+.tl i {
+  font-style: normal;
+  color: var(--mute2);
+}
+
+.price {
+  margin-top: 6px;
+  font-size: 26px;
   font-weight: 700;
-  cursor: pointer;
-  transition: background 0.15s ease;
-}
-.book-now-btn:hover {
-  background: var(--color-primary-hover);
+  letter-spacing: -0.8px;
+  line-height: 1;
+  white-space: nowrap;
+  color: var(--ink);
 }
 
-@media (max-width: 992px) {
-  .results-layout {
-    flex-direction: column;
+.price small {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--mute);
+  letter-spacing: 0;
+  margin-left: 4px;
+}
+
+.pn {
+  margin-top: 10px;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  padding: 5px 9px;
+  background: var(--chip-bg);
+  border: 1px solid var(--chip-line);
+  border-radius: 7px;
+  font-size: 11.5px;
+  color: var(--sub);
+}
+
+.pn b {
+  font-size: 12.5px;
+  color: var(--ink);
+}
+
+.fees {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  color: var(--mute);
+}
+
+.fees svg.i {
+  width: 13px;
+  height: 13px;
+  stroke: #2fa36f;
+}
+
+.actions {
+  margin-top: auto;
+  padding-top: 16px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Expandable rooms */
+.rooms {
+  flex: 0 0 100%;
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.4s cubic-bezier(0.2, 0.7, 0.2, 1);
+  background: linear-gradient(180deg, #f1f5fd, #f8f9fc);
+  border-top: 0 solid var(--line);
+}
+
+.card.open .rooms {
+  grid-template-rows: 1fr;
+  border-top-width: 1px;
+}
+
+.rooms > div {
+  overflow: hidden;
+  min-height: 0;
+}
+
+.rbox {
+  padding: 18px 24px 20px;
+}
+
+.rhead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.rhead span {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--mute);
+}
+
+.rrow {
+  display: grid;
+  grid-template-columns: 44px 1fr auto auto;
+  gap: 16px;
+  align-items: center;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.card.open .rrow {
+  animation: up 0.45s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+  animation-delay: calc(var(--j, 0) * 70ms);
+}
+
+.rrow:hover {
+  border-color: #b9cbee;
+  box-shadow: 0 8px 20px -12px rgba(60, 90, 160, 0.35);
+}
+
+.ri {
+  width: 44px;
+  height: 44px;
+  border-radius: 11px;
+  background: #eaf0fc;
+  color: var(--btn);
+  display: grid;
+  place-items: center;
+}
+
+.ri svg {
+  width: 22px;
+  height: 22px;
+  stroke: currentColor;
+}
+
+.rn b {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 7px;
+}
+
+.rm {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  align-items: center;
+}
+
+.rm .tag {
+  height: 24px;
+  font-size: 11.5px;
+  padding: 0 8px;
+}
+
+.rm .tag svg.i {
+  width: 13px;
+  height: 13px;
+}
+
+.rc {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #0d8a58;
+}
+
+.rc svg {
+  width: 13px;
+  height: 13px;
+}
+
+.rp {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.rp b {
+  display: block;
+  font-size: 18px;
+  letter-spacing: -0.4px;
+}
+
+.rp b small {
+  font-size: 11px;
+  color: var(--mute);
+  margin-left: 3px;
+  letter-spacing: 0;
+}
+
+.rp span {
+  font-size: 11.5px;
+  color: var(--mute);
+}
+
+.rrow .btn {
+  height: 38px;
+  padding: 0 24px;
+}
+
+.rmore {
+  width: 100%;
+  height: 38px;
+  border: 1px dashed #b9cbee;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--btn);
+  font-weight: 600;
+  font-size: 12.5px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.rmore:hover {
+  background: #eaf0fc;
+}
+
+/* Toast */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  transform: translate(-50%, 16px);
+  opacity: 0;
+  pointer-events: none;
+  background: #0f172a;
+  color: #fff;
+  padding: 11px 18px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: 0 12px 30px -8px rgba(0, 0, 0, 0.4);
+  transition: 0.3s;
+  z-index: 40;
+}
+
+.toast.on {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.empty {
+  background: var(--card);
+  border: 1px dashed var(--line);
+  border-radius: 10px;
+  padding: 40px;
+  text-align: center;
+  color: var(--sub);
+}
+
+.empty b {
+  display: block;
+  color: var(--ink);
+  margin-bottom: 6px;
+  font-size: 15px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
   }
-  .filters-sidebar {
-    width: 100%;
-    position: static;
-  }
-  .card-horizontal-grid {
+}
+
+@media (max-width: 980px) {
+  .page {
     grid-template-columns: 1fr;
   }
-  .hotel-photo-col {
+  .side {
+    display: none;
+    position: static;
+  }
+  .side.open {
+    display: block;
+  }
+  .mf {
+    display: inline-block;
+  }
+}
+
+@media (max-width: 760px) {
+  .wrap {
+    padding: 0 14px;
+  }
+  .sum .sp {
+    margin-left: 0;
+  }
+  .card {
+    flex-direction: column;
+    flex-wrap: nowrap;
+  }
+  .photo {
+    flex: 0 0 auto;
     height: 200px;
+  }
+  .main {
+    padding: 16px 16px 4px;
+  }
+  .cside {
+    flex: 0 0 auto;
+    margin: 0;
+    padding: 14px 16px 16px;
+    border-left: 0;
+    border-top: 1px solid var(--line);
+    align-items: flex-start;
+    text-align: left;
+  }
+  .actions {
+    margin-top: 14px;
+    flex-direction: row;
+  }
+  .actions .btn {
+    flex: 1;
+  }
+  .tags {
+    padding-top: 14px;
+    padding-bottom: 6px;
+  }
+  .rooms {
+    flex: 0 0 auto;
+  }
+  .rbox {
+    padding: 14px 12px 16px;
+  }
+  .rhead {
+    flex-direction: column;
+    gap: 2px;
+  }
+  .rrow {
+    grid-template-columns: 44px 1fr;
+    gap: 12px 14px;
+  }
+  .rp {
+    grid-column: 1 / -1;
+    text-align: left;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+  .rp b {
+    display: inline;
+  }
+  .rrow .btn {
+    grid-column: 1 / -1;
   }
 }
 </style>
-
