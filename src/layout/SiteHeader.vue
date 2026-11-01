@@ -1,25 +1,66 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { dashboardStats, currentUser } from '../config/mockData'
 
 const route = useRoute()
 const activeDropdown = ref<string | null>(null)
 const accountMenuOpen = ref(false)
+let closeTimeout: ReturnType<typeof setTimeout> | null = null
+
+function openDropdown(name: string) {
+  if (closeTimeout) {
+    clearTimeout(closeTimeout)
+    closeTimeout = null
+  }
+  activeDropdown.value = name
+}
+
+function scheduleCloseDropdown() {
+  if (closeTimeout) clearTimeout(closeTimeout)
+  closeTimeout = setTimeout(() => {
+    activeDropdown.value = null
+  }, 220)
+}
 
 function toggleDropdown(name: string) {
+  if (closeTimeout) {
+    clearTimeout(closeTimeout)
+    closeTimeout = null
+  }
   activeDropdown.value = activeDropdown.value === name ? null : name
 }
-function closeDropdown() {
+
+function closeDropdownNow() {
+  if (closeTimeout) {
+    clearTimeout(closeTimeout)
+    closeTimeout = null
+  }
   activeDropdown.value = null
 }
 
 function toggleAccount() {
   accountMenuOpen.value = !accountMenuOpen.value
 }
-function closeAccount() {
-  setTimeout(() => (accountMenuOpen.value = false), 150)
+
+function onDocumentClick(e: MouseEvent) {
+  const target = e.target as HTMLElement | null
+  if (!target?.closest('.nav-dropdown-wrap')) {
+    activeDropdown.value = null
+  }
+  if (!target?.closest('.account-menu-wrap')) {
+    accountMenuOpen.value = false
+  }
 }
+
+onMounted(() => {
+  document.addEventListener('click', onDocumentClick)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', onDocumentClick)
+  if (closeTimeout) clearTimeout(closeTimeout)
+})
 
 function formatCurrency(n: number) {
   return new Intl.NumberFormat('en-US', {
@@ -65,26 +106,31 @@ function formatCurrency(n: number) {
         <!-- Operations Dropdown (Bookings, Amendment Requests) -->
         <div
           class="nav-dropdown-wrap"
-          @mouseenter="activeDropdown = 'operations'"
-          @mouseleave="closeDropdown"
+          @mouseenter="openDropdown('operations')"
+          @mouseleave="scheduleCloseDropdown"
         >
           <button
             class="nav-link nav-link--btn"
-            :class="{ 'nav-link--active': route.path.startsWith('/operations') }"
-            @click="toggleDropdown('operations')"
+            :class="{ 'nav-link--active': route.path.startsWith('/operations') || activeDropdown === 'operations' }"
+            @click.stop="toggleDropdown('operations')"
           >
             <span>Operations</span>
-            <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor" class="dropdown-chevron">
+            <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor" class="dropdown-chevron" :class="{ 'dropdown-chevron--open': activeDropdown === 'operations' }">
               <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
             </svg>
           </button>
 
-          <div v-if="activeDropdown === 'operations'" class="dropdown-menu">
-            <RouterLink to="/operations/bookings" class="dropdown-item" @click="closeDropdown">
+          <div
+            v-if="activeDropdown === 'operations'"
+            class="dropdown-menu"
+            @mouseenter="openDropdown('operations')"
+            @mouseleave="scheduleCloseDropdown"
+          >
+            <RouterLink to="/operations/bookings" class="dropdown-item" @click="closeDropdownNow">
               <span class="dropdown-icon">📅</span>
               <span>Bookings</span>
             </RouterLink>
-            <RouterLink to="/operations/amendments" class="dropdown-item" @click="closeDropdown">
+            <RouterLink to="/operations/amendments" class="dropdown-item" @click="closeDropdownNow">
               <span class="dropdown-icon">✏️</span>
               <span>Amendment Requests</span>
             </RouterLink>
@@ -94,30 +140,35 @@ function formatCurrency(n: number) {
         <!-- Finance Dropdown (Wallet, Request Credit, Account Statement) -->
         <div
           class="nav-dropdown-wrap"
-          @mouseenter="activeDropdown = 'finance'"
-          @mouseleave="closeDropdown"
+          @mouseenter="openDropdown('finance')"
+          @mouseleave="scheduleCloseDropdown"
         >
           <button
             class="nav-link nav-link--btn"
-            :class="{ 'nav-link--active': route.path.startsWith('/finance') }"
-            @click="toggleDropdown('finance')"
+            :class="{ 'nav-link--active': route.path.startsWith('/finance') || activeDropdown === 'finance' }"
+            @click.stop="toggleDropdown('finance')"
           >
             <span>Finance</span>
-            <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor" class="dropdown-chevron">
+            <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor" class="dropdown-chevron" :class="{ 'dropdown-chevron--open': activeDropdown === 'finance' }">
               <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
             </svg>
           </button>
 
-          <div v-if="activeDropdown === 'finance'" class="dropdown-menu">
-            <RouterLink to="/finance/wallet" class="dropdown-item" @click="closeDropdown">
+          <div
+            v-if="activeDropdown === 'finance'"
+            class="dropdown-menu"
+            @mouseenter="openDropdown('finance')"
+            @mouseleave="scheduleCloseDropdown"
+          >
+            <RouterLink to="/finance/wallet" class="dropdown-item" @click="closeDropdownNow">
               <span class="dropdown-icon">💳</span>
               <span>Wallet</span>
             </RouterLink>
-            <RouterLink to="/finance/request-credit" class="dropdown-item" @click="closeDropdown">
+            <RouterLink to="/finance/request-credit" class="dropdown-item" @click="closeDropdownNow">
               <span class="dropdown-icon">➕</span>
               <span>Request Credit</span>
             </RouterLink>
-            <RouterLink to="/finance/statement" class="dropdown-item" @click="closeDropdown">
+            <RouterLink to="/finance/statement" class="dropdown-item" @click="closeDropdownNow">
               <span class="dropdown-icon">📄</span>
               <span>Account Statement</span>
             </RouterLink>
@@ -127,34 +178,39 @@ function formatCurrency(n: number) {
         <!-- Agencies Dropdown (Markup Rules, Sub-Agencies, Users, Settings) -->
         <div
           class="nav-dropdown-wrap"
-          @mouseenter="activeDropdown = 'agencies'"
-          @mouseleave="closeDropdown"
+          @mouseenter="openDropdown('agencies')"
+          @mouseleave="scheduleCloseDropdown"
         >
           <button
             class="nav-link nav-link--btn"
-            :class="{ 'nav-link--active': route.path.startsWith('/agency') }"
-            @click="toggleDropdown('agencies')"
+            :class="{ 'nav-link--active': route.path.startsWith('/agency') || activeDropdown === 'agencies' }"
+            @click.stop="toggleDropdown('agencies')"
           >
             <span>Agencies</span>
-            <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor" class="dropdown-chevron">
+            <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor" class="dropdown-chevron" :class="{ 'dropdown-chevron--open': activeDropdown === 'agencies' }">
               <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
             </svg>
           </button>
 
-          <div v-if="activeDropdown === 'agencies'" class="dropdown-menu">
-            <RouterLink to="/agency/markup" class="dropdown-item" @click="closeDropdown">
+          <div
+            v-if="activeDropdown === 'agencies'"
+            class="dropdown-menu"
+            @mouseenter="openDropdown('agencies')"
+            @mouseleave="scheduleCloseDropdown"
+          >
+            <RouterLink to="/agency/markup" class="dropdown-item" @click="closeDropdownNow">
               <span class="dropdown-icon">%</span>
               <span>Markup Rules</span>
             </RouterLink>
-            <RouterLink to="/agency/sub-agencies" class="dropdown-item" @click="closeDropdown">
+            <RouterLink to="/agency/sub-agencies" class="dropdown-item" @click="closeDropdownNow">
               <span class="dropdown-icon">🏢</span>
               <span>Sub-Agencies</span>
             </RouterLink>
-            <RouterLink to="/agency/users" class="dropdown-item" @click="closeDropdown">
+            <RouterLink to="/agency/users" class="dropdown-item" @click="closeDropdownNow">
               <span class="dropdown-icon">👥</span>
               <span>Users</span>
             </RouterLink>
-            <RouterLink to="/agency/settings" class="dropdown-item" @click="closeDropdown">
+            <RouterLink to="/agency/settings" class="dropdown-item" @click="closeDropdownNow">
               <span class="dropdown-icon">⚙️</span>
               <span>Agency Settings</span>
             </RouterLink>
@@ -192,8 +248,7 @@ function formatCurrency(n: number) {
           <button
             class="user-profile-btn"
             title="My Account"
-            @click="toggleAccount"
-            @blur="closeAccount"
+            @click.stop="toggleAccount"
           >
             <div class="user-avatar-sm">
               {{ currentUser.avatar }}
@@ -296,7 +351,12 @@ function formatCurrency(n: number) {
 
 .dropdown-chevron {
   opacity: 0.6;
-  transition: transform 0.15s ease;
+  transition: transform 0.2s ease;
+}
+
+.dropdown-chevron--open {
+  transform: rotate(180deg);
+  opacity: 1;
 }
 
 /* Dropdown Menu */
@@ -306,7 +366,8 @@ function formatCurrency(n: number) {
 
 .dropdown-menu {
   position: absolute;
-  top: calc(100% + 6px);
+  top: 100%;
+  margin-top: 6px;
   left: 0;
   background: #ffffff;
   border: 1px solid var(--color-border);
@@ -315,7 +376,18 @@ function formatCurrency(n: number) {
   min-width: 200px;
   padding: 6px 0;
   z-index: 60;
-  overflow: hidden;
+  overflow: visible;
+}
+
+/* Invisible hover bridge to eliminate gap flicker */
+.dropdown-menu::before {
+  content: '';
+  position: absolute;
+  top: -12px;
+  left: 0;
+  right: 0;
+  height: 12px;
+  background: transparent;
 }
 
 .dropdown-item {

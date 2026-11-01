@@ -7,7 +7,7 @@ const route = useRoute()
 const router = useRouter()
 
 // ── Tabs ───────────────────────────────────────────────────
-const tabs = ['Stays', 'Flights', 'Experiences', 'Theme parks', 'Transfers', 'Car Rental']
+const tabs = ['Stays', 'Flights']
 const activeTab = ref(route.path === '/flights' ? 'Flights' : 'Stays')
 
 watch(() => route.path, (p) => {
@@ -155,37 +155,74 @@ function openFromCalendar() {
   roomsOpen.value = false
   nightsOpen.value = false
   destinationDropdownOpen.value = false
+  flightFromOpen.value = false
+  flightToOpen.value = false
+  flightCabinOpen.value = false
 }
 
 function openToCalendar() {
+  if (activeTab.value === 'Flights' && flightTripType.value === 'one-way') {
+    flightTripType.value = 'return'
+  }
   activeDateField.value = 'end'
   calendarOpen.value = true
   roomsOpen.value = false
   nightsOpen.value = false
   destinationDropdownOpen.value = false
+  flightFromOpen.value = false
+  flightToOpen.value = false
+  flightCabinOpen.value = false
 }
 
 function openNightsDropdown() {
+  if (activeTab.value === 'Flights' && flightTripType.value === 'one-way') {
+    flightTripType.value = 'return'
+  }
   nightsOpen.value = !nightsOpen.value
   calendarOpen.value = false
   roomsOpen.value = false
   destinationDropdownOpen.value = false
+  flightFromOpen.value = false
+  flightToOpen.value = false
+  flightCabinOpen.value = false
 }
 
-function selectNights(n: number) {
+function updateNights(n: number) {
+  const safe = Math.max(1, Math.min(90, Math.round(n) || 1))
   if (!startDate.value) {
     startDate.value = new Date(2026, 9, 29)
   }
   const next = new Date(startDate.value)
-  next.setDate(next.getDate() + n)
+  next.setDate(next.getDate() + safe)
   endDate.value = next
-  nightsOpen.value = false
 }
 
 function incrementNights(delta: number) {
   const current = nightsCount.value || 1
-  const updated = Math.max(1, Math.min(60, current + delta))
-  selectNights(updated)
+  const updated = Math.max(1, Math.min(90, current + delta))
+  updateNights(updated)
+}
+
+function onNightsInput(e: Event) {
+  const target = e.target as HTMLInputElement
+  const val = parseInt(target.value, 10)
+  if (!isNaN(val) && val >= 1) {
+    updateNights(val)
+  }
+}
+
+function onNightsChange(e: Event) {
+  const target = e.target as HTMLInputElement
+  const val = parseInt(target.value, 10)
+  if (isNaN(val) || val < 1) {
+    updateNights(1)
+    target.value = '1'
+  } else if (val > 90) {
+    updateNights(90)
+    target.value = '90'
+  } else {
+    updateNights(val)
+  }
 }
 
 function onDateClick(date: Date) {
@@ -345,22 +382,6 @@ const searchResults = ref([
   },
 ])
 
-function formatFlightDateShort(d: Date | null): string {
-  if (!d) return ''
-  const day = d.getDate()
-  const month = shortMonths[d.getMonth()]
-  return `${day} ${month}`
-}
-
-const flightDatesDisplay = computed(() => {
-  if (!startDate.value) return 'Select dates'
-  if (flightTripType.value === 'one-way') {
-    return `${formatFlightDateShort(startDate.value)} ${startDate.value.getFullYear()}`
-  }
-  if (!endDate.value) return `${formatFlightDateShort(startDate.value)} - Return`
-  return `${formatFlightDateShort(startDate.value)} - ${formatFlightDateShort(endDate.value)}`
-})
-
 const flightPassengersSummary = computed(() => {
   const totalAdults = rooms.value.reduce((s, r) => s + r.adults, 0)
   const totalChildren = rooms.value.reduce((s, r) => s + r.children, 0)
@@ -460,7 +481,7 @@ function closeAllDropdowns() {
           </label>
         </div>
 
-        <!-- ROW 1: From | ⇄ | To | Dates -->
+        <!-- ROW 1: From Airport | ⇄ | To Airport | Passengers -->
         <div class="stays-row stays-row--top">
 
           <!-- From Airport -->
@@ -516,63 +537,7 @@ function closeAllDropdowns() {
             </div>
           </div>
 
-          <!-- Dates -->
-          <div class="stays-col stays-col--date">
-            <label class="field-label">Dates</label>
-            <div class="input-box flight-date-box" @click="calendarOpen = !calendarOpen; flightFromOpen = false; flightToOpen = false; roomsOpen = false">
-              <svg class="box-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                <rect x="3" y="4" width="18" height="18" rx="2" />
-                <line x1="16" y1="2" x2="16" y2="6" />
-                <line x1="8" y1="2" x2="8" y2="6" />
-                <line x1="3" y1="10" x2="21" y2="10" />
-              </svg>
-              <span class="date-text-formatted">{{ flightDatesDisplay }}</span>
-              <span v-if="flightTripType === 'return' && nightsCount > 0" class="flight-nights-tag">{{ nightsCount }}d</span>
-            </div>
-            <!-- Calendar Popover for Flights -->
-            <div v-if="calendarOpen" class="calendar-popover" @click.stop>
-              <div class="cal-header">
-                <button class="cal-nav-btn" @click="prevMonth"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6" /></svg></button>
-                <div class="cal-month-title">{{ monthNames[viewMonth] }} {{ viewYear }}</div>
-                <div class="cal-month-title cal-month-title--right">{{ monthNames[(viewMonth + 1) % 12] }} {{ viewMonth === 11 ? viewYear + 1 : viewYear }}</div>
-                <button class="cal-nav-btn" @click="nextMonth"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6" /></svg></button>
-              </div>
-              <div class="cal-months-container">
-                <div class="month-grid">
-                  <div class="day-headers"><span v-for="d in ['Su','Mo','Tu','We','Th','Fr','Sa']" :key="d" class="day-header-cell">{{ d }}</span></div>
-                  <div class="days-cells">
-                    <div v-for="empty in getFirstDayOfWeek(viewYear, viewMonth)" :key="'fm1-e-'+empty" class="day-cell day-cell--empty"></div>
-                    <div v-for="dayNum in getDaysInMonth(viewYear, viewMonth)" :key="'fm1-d-'+dayNum" class="day-cell"
-                      :class="{ 'day-cell--start': isSameDay(new Date(viewYear, viewMonth, dayNum), startDate), 'day-cell--end': isSameDay(new Date(viewYear, viewMonth, dayNum), endDate), 'day-cell--in-range': isBetween(new Date(viewYear, viewMonth, dayNum), startDate, endDate || hoverDate) }"
-                      @mouseenter="hoverDate = new Date(viewYear, viewMonth, dayNum)" @click="onDateClick(new Date(viewYear, viewMonth, dayNum))">
-                      <span class="day-num">{{ dayNum }}</span>
-                    </div>
-                  </div>
-                </div>
-                <div class="month-grid">
-                  <div class="day-headers"><span v-for="d in ['Su','Mo','Tu','We','Th','Fr','Sa']" :key="d" class="day-header-cell">{{ d }}</span></div>
-                  <div class="days-cells">
-                    <div v-for="empty in getFirstDayOfWeek(viewMonth === 11 ? viewYear+1 : viewYear, (viewMonth+1)%12)" :key="'fm2-e-'+empty" class="day-cell day-cell--empty"></div>
-                    <div v-for="dayNum in getDaysInMonth(viewMonth === 11 ? viewYear+1 : viewYear, (viewMonth+1)%12)" :key="'fm2-d-'+dayNum" class="day-cell"
-                      :class="{ 'day-cell--start': isSameDay(new Date(viewMonth === 11 ? viewYear+1 : viewYear, (viewMonth+1)%12, dayNum), startDate), 'day-cell--end': isSameDay(new Date(viewMonth === 11 ? viewYear+1 : viewYear, (viewMonth+1)%12, dayNum), endDate), 'day-cell--in-range': isBetween(new Date(viewMonth === 11 ? viewYear+1 : viewYear, (viewMonth+1)%12, dayNum), startDate, endDate || hoverDate) }"
-                      @mouseenter="hoverDate = new Date(viewMonth === 11 ? viewYear+1 : viewYear, (viewMonth+1)%12, dayNum)" @click="onDateClick(new Date(viewMonth === 11 ? viewYear+1 : viewYear, (viewMonth+1)%12, dayNum))">
-                      <span class="day-num">{{ dayNum }}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="cal-footer">
-                <span class="cal-footer-text">{{ formatDisplayDate(startDate) }} - {{ endDate ? formatDisplayDate(endDate) : 'Select date' }}<span v-if="nightsCount > 0"> ({{ nightsCount }} day{{ nightsCount > 1 ? 's' : '' }})</span></span>
-                <button class="apply-btn" style="margin-left:auto;padding:6px 16px;" @click="calendarOpen = false">Done</button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- ROW 2: Passengers | Cabin Class | Direct flights | Search -->
-        <div class="stays-row stays-row--bottom">
-
-          <!-- Passengers -->
+          <!-- Passengers (moved to Row 1) -->
           <div class="stays-col stays-col--guests">
             <label class="field-label">Passengers</label>
             <div class="input-box" @click="roomsOpen = !roomsOpen; flightCabinOpen = false; flightFromOpen = false; flightToOpen = false; calendarOpen = false">
@@ -615,6 +580,150 @@ function closeAllDropdowns() {
               </div>
               <div class="popover-actions">
                 <button class="apply-btn" @click="roomsOpen = false">Apply</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ROW 2: From (date) | Days | To (date) | Class | Direct flights | Search -->
+        <div class="stays-row stays-row--bottom">
+
+          <!-- Flight Date 1: From (Departure Date) -->
+          <div class="stays-col stays-col--date">
+            <label class="field-label">From</label>
+            <div class="input-box" @click="openFromCalendar">
+              <svg class="box-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <rect x="3" y="4" width="18" height="18" rx="2" />
+                <line x1="16" y1="2" x2="16" y2="6" />
+                <line x1="8" y1="2" x2="8" y2="6" />
+                <line x1="3" y1="10" x2="21" y2="10" />
+              </svg>
+              <span class="date-text-formatted">{{ formatTextDate(startDate) }}</span>
+            </div>
+          </div>
+
+          <!-- Flight Date 2: Days (Duration in between) -->
+          <div class="stays-col stays-col--nights">
+            <label class="field-label">Days</label>
+            <div
+              class="input-box nights-input-box"
+              :class="{ 'input-box--disabled': flightTripType === 'one-way' }"
+              @click="openNightsDropdown"
+            >
+              <svg class="box-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
+              <span class="nights-text-val">
+                {{ flightTripType === 'one-way' ? 'One-way' : `${nightsCount} day${nightsCount !== 1 ? 's' : ''}` }}
+              </span>
+              <svg v-if="flightTripType !== 'one-way'" width="13" height="13" viewBox="0 0 20 20" fill="currentColor" class="chevron-icon">
+                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+              </svg>
+            </div>
+
+            <!-- Days Counter Popover -->
+            <div v-if="nightsOpen && activeTab === 'Flights'" class="nights-popover" @click.stop>
+              <div class="counter-row">
+                <span class="counter-label">Days</span>
+                <div class="counter-box">
+                  <button
+                    type="button"
+                    class="counter-btn"
+                    :disabled="nightsCount <= 1"
+                    @click="incrementNights(-1)"
+                    aria-label="Decrease days"
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/>
+                    </svg>
+                  </button>
+                  <input
+                    type="number"
+                    min="1"
+                    max="90"
+                    class="counter-val nights-num-input"
+                    :value="nightsCount"
+                    @input="onNightsInput"
+                    @change="onNightsChange"
+                    @keydown.enter="nightsOpen = false"
+                  />
+                  <button
+                    type="button"
+                    class="counter-btn"
+                    :disabled="nightsCount >= 90"
+                    @click="incrementNights(1)"
+                    aria-label="Increase days"
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              <div class="popover-actions nights-popover-actions">
+                <button type="button" class="apply-btn" @click="nightsOpen = false">Apply</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Flight Date 3: To (Return Date) -->
+          <div class="stays-col stays-col--date">
+            <label class="field-label">To</label>
+            <div
+              class="input-box"
+              :class="{ 'input-box--disabled': flightTripType === 'one-way' }"
+              @click="openToCalendar"
+            >
+              <svg class="box-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <rect x="3" y="4" width="18" height="18" rx="2" />
+                <line x1="16" y1="2" x2="16" y2="6" />
+                <line x1="8" y1="2" x2="8" y2="6" />
+                <line x1="3" y1="10" x2="21" y2="10" />
+              </svg>
+              <span class="date-text-formatted">
+                {{ flightTripType === 'one-way' ? '—' : formatTextDate(endDate) }}
+              </span>
+            </div>
+
+            <!-- Calendar Popover for Flights -->
+            <div v-if="calendarOpen && activeTab === 'Flights'" class="calendar-popover" @click.stop>
+              <div class="cal-header">
+                <button class="cal-nav-btn" @click="prevMonth"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6" /></svg></button>
+                <div class="cal-month-title">{{ monthNames[viewMonth] }} {{ viewYear }}</div>
+                <div class="cal-month-title cal-month-title--right">{{ monthNames[(viewMonth + 1) % 12] }} {{ viewMonth === 11 ? viewYear + 1 : viewYear }}</div>
+                <button class="cal-nav-btn" @click="nextMonth"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6" /></svg></button>
+              </div>
+              <div class="cal-months-container">
+                <div class="month-grid">
+                  <div class="day-headers"><span v-for="d in ['Su','Mo','Tu','We','Th','Fr','Sa']" :key="d" class="day-header-cell">{{ d }}</span></div>
+                  <div class="days-cells">
+                    <div v-for="empty in getFirstDayOfWeek(viewYear, viewMonth)" :key="'fm1-e-'+empty" class="day-cell day-cell--empty"></div>
+                    <div v-for="dayNum in getDaysInMonth(viewYear, viewMonth)" :key="'fm1-d-'+dayNum" class="day-cell"
+                      :class="{ 'day-cell--start': isSameDay(new Date(viewYear, viewMonth, dayNum), startDate), 'day-cell--end': isSameDay(new Date(viewYear, viewMonth, dayNum), endDate), 'day-cell--in-range': isBetween(new Date(viewYear, viewMonth, dayNum), startDate, endDate || hoverDate) }"
+                      @mouseenter="hoverDate = new Date(viewYear, viewMonth, dayNum)" @click="onDateClick(new Date(viewYear, viewMonth, dayNum))">
+                      <span class="day-num">{{ dayNum }}</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="month-grid">
+                  <div class="day-headers"><span v-for="d in ['Su','Mo','Tu','We','Th','Fr','Sa']" :key="d" class="day-header-cell">{{ d }}</span></div>
+                  <div class="days-cells">
+                    <div v-for="empty in getFirstDayOfWeek(viewMonth === 11 ? viewYear+1 : viewYear, (viewMonth+1)%12)" :key="'fm2-e-'+empty" class="day-cell day-cell--empty"></div>
+                    <div v-for="dayNum in getDaysInMonth(viewMonth === 11 ? viewYear+1 : viewYear, (viewMonth+1)%12)" :key="'fm2-d-'+dayNum" class="day-cell"
+                      :class="{ 'day-cell--start': isSameDay(new Date(viewMonth === 11 ? viewYear+1 : viewYear, (viewMonth+1)%12, dayNum), startDate), 'day-cell--end': isSameDay(new Date(viewMonth === 11 ? viewYear+1 : viewYear, (viewMonth+1)%12, dayNum), endDate), 'day-cell--in-range': isBetween(new Date(viewMonth === 11 ? viewYear+1 : viewYear, (viewMonth+1)%12, dayNum), startDate, endDate || hoverDate) }"
+                      @mouseenter="hoverDate = new Date(viewMonth === 11 ? viewYear+1 : viewYear, (viewMonth+1)%12, dayNum)" @click="onDateClick(new Date(viewMonth === 11 ? viewYear+1 : viewYear, (viewMonth+1)%12, dayNum))">
+                      <span class="day-num">{{ dayNum }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="cal-footer">
+                <span class="cal-footer-text">
+                  {{ formatTextDate(startDate) }} — {{ endDate ? formatTextDate(endDate) : 'Select date' }}
+                  <span v-if="nightsCount > 0"> ({{ nightsCount }} day{{ nightsCount > 1 ? 's' : '' }})</span>
+                </span>
+                <button class="apply-btn" style="margin-left:auto;padding:6px 16px;" @click="calendarOpen = false">Done</button>
               </div>
             </div>
           </div>
@@ -755,25 +864,47 @@ function closeAllDropdowns() {
                 <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
               </svg>
             </div>
-            <div v-if="nightsOpen" class="nights-popover" @click.stop>
-              <div class="nights-stepper">
-                <span class="stepper-label">Duration:</span>
-                <div class="stepper-controls">
-                  <button class="step-btn" :disabled="nightsCount <= 1" @click="incrementNights(-1)">−</button>
-                  <span class="step-val">{{ nightsCount }} night{{ nightsCount !== 1 ? 's' : '' }}</span>
-                  <button class="step-btn" :disabled="nightsCount >= 60" @click="incrementNights(1)">+</button>
+            <!-- Nights Counter Popover -->
+            <div v-if="nightsOpen && activeTab === 'Stays'" class="nights-popover" @click.stop>
+              <div class="counter-row">
+                <span class="counter-label">Nights</span>
+                <div class="counter-box">
+                  <button
+                    type="button"
+                    class="counter-btn"
+                    :disabled="nightsCount <= 1"
+                    @click="incrementNights(-1)"
+                    aria-label="Decrease nights"
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/>
+                    </svg>
+                  </button>
+                  <input
+                    type="number"
+                    min="1"
+                    max="90"
+                    class="counter-val nights-num-input"
+                    :value="nightsCount"
+                    @input="onNightsInput"
+                    @change="onNightsChange"
+                    @keydown.enter="nightsOpen = false"
+                  />
+                  <button
+                    type="button"
+                    class="counter-btn"
+                    :disabled="nightsCount >= 90"
+                    @click="incrementNights(1)"
+                    aria-label="Increase nights"
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
+                    </svg>
+                  </button>
                 </div>
               </div>
-              <div class="nights-quick-grid">
-                <button
-                  v-for="n in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 14, 21]"
-                  :key="n"
-                  class="night-chip"
-                  :class="{ 'night-chip--active': nightsCount === n }"
-                  @click="selectNights(n)"
-                >
-                  {{ n }} {{ n === 1 ? 'nt' : 'nts' }}
-                </button>
+              <div class="popover-actions nights-popover-actions">
+                <button type="button" class="apply-btn" @click="nightsOpen = false">Apply</button>
               </div>
             </div>
           </div>
@@ -1301,28 +1432,27 @@ function closeAllDropdowns() {
 }
 
 .stays-col--date {
-  flex: 1.2 1 140px;
-  min-width: 130px;
+  flex: 1.4 1 160px;
+  min-width: 140px;
 }
 
 .stays-col--nights {
-  flex: 0.9 1 120px;
-  min-width: 110px;
+  flex: 1 1 140px;
+  min-width: 120px;
 }
 
-/* Bottom row */
+/* Row 1 guests (Passengers) */
 .stays-col--guests {
-  flex: 0 0 auto;
-  width: 200px;
-  min-width: 160px;
-  max-width: 220px;
+  flex: 1 1 160px;
+  min-width: 150px;
+  max-width: 240px;
 }
 
+/* Row 2 cabin class */
 .stays-col--cabin {
-  flex: 0 0 auto;
-  width: 190px;
-  min-width: 160px;
-  max-width: 220px;
+  flex: 1.2 1 160px;
+  min-width: 150px;
+  max-width: 240px;
   position: relative;
 }
 
@@ -1435,93 +1565,50 @@ function closeAllDropdowns() {
   left: 0;
   background: #ffffff;
   border: 1px solid var(--color-border);
-  border-radius: 10px;
-  box-shadow: 0 10px 28px rgba(31,43,56,0.13);
-  padding: 16px;
+  border-radius: 8px;
+  box-shadow: 0 10px 28px rgba(31, 43, 56, 0.13);
+  padding: 16px 18px;
   z-index: 60;
-  width: 220px;
+  width: 250px;
 }
 
-.nights-stepper {
+.nights-popover .counter-row {
+  margin-bottom: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 14px;
 }
 
-.stepper-label {
+.nights-popover-actions {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.nights-popover-actions .apply-btn {
+  padding: 6px 18px;
   font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--color-text);
 }
 
-.stepper-controls {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.step-btn {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  border: 1px solid var(--color-primary);
-  background: transparent;
-  color: var(--color-primary);
-  font-size: 1.1rem;
-  line-height: 1;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.12s;
-}
-
-.step-btn:disabled {
-  opacity: 0.35;
-  cursor: not-allowed;
-}
-
-.step-btn:not(:disabled):hover {
-  background: var(--color-primary);
-  color: #fff;
-}
-
-.step-val {
-  font-size: 0.88rem;
-  font-weight: 600;
-  color: var(--color-text);
-  min-width: 56px;
+.nights-num-input {
+  width: 44px;
   text-align: center;
-}
-
-.nights-quick-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.night-chip {
-  padding: 5px 10px;
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-  background: #fff;
-  font-size: 0.8rem;
-  color: var(--color-text);
-  cursor: pointer;
-  transition: all 0.12s;
-}
-
-.night-chip:hover {
-  border-color: var(--color-primary);
-  color: var(--color-primary);
-}
-
-.night-chip--active {
-  background: var(--color-primary);
-  border-color: var(--color-primary);
-  color: #fff;
+  border: none;
+  background: transparent;
+  font-size: 1rem;
   font-weight: 600;
+  color: var(--color-text);
+  outline: none;
+  padding: 0;
+  -moz-appearance: textfield;
+}
+
+.nights-num-input::-webkit-outer-spin-button,
+.nights-num-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 /* stays params row */
@@ -1547,6 +1634,12 @@ function closeAllDropdowns() {
 
 .input-box:hover {
   border-color: var(--color-primary);
+}
+
+.input-box--disabled {
+  background: #f8fafc;
+  opacity: 0.65;
+  cursor: pointer;
 }
 
 .input-col--error .input-box {
