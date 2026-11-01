@@ -460,59 +460,56 @@ function exportExcel() {
 
             <!-- Expandable Rooms Drawer -->
             <div class="rooms">
-              <div class="rbox">
-                <div class="rhead">
-                  Available rooms
-                  <span>{{ nightsCount }} nights · {{ guestsText }}</span>
-                </div>
-
-                <div
-                  v-for="(x, j) in h.rooms"
-                  :key="j"
-                  class="rrow"
-                  :style="{ '--j': j }"
-                >
-                  <div class="ri">
-                    <svg class="i" viewBox="0 0 24 24">
-                      <path d="M3 18v-7a2 2 0 012-2h14a2 2 0 012 2v7M3 15h18M7 9V7a1 1 0 011-1h8a1 1 0 011 1v2" />
-                    </svg>
-                  </div>
-                  <div class="rn">
-                    <b>{{ x[0] }}</b>
-                    <div class="rm">
-                      <span v-if="x[1] === 'Room only'" class="tag t2">
-                        <svg class="i" viewBox="0 0 24 24">
-                          <path d="M7 3v8M4.5 3v4a2.5 2.5 0 005 0V3M7 11v10M17 3c-2 2-3 5-3 8h3v10" />
-                        </svg>
-                        Room only
-                      </span>
-                      <span v-else class="tag t5">
-                        <svg class="i" viewBox="0 0 24 24">
-                          <path d="M4 8h13v6a5 5 0 01-5 5H9a5 5 0 01-5-5zM17 10h2a2 2 0 010 4h-2M7 2v2M11 2v2" />
-                        </svg>
-                        Breakfast included
-                      </span>
-                      <span class="rc">
-                        <svg class="i" viewBox="0 0 24 24">
-                          <path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z" />
-                          <path d="M8.5 12l2.5 2.5 4.5-5" />
-                        </svg>
-                        Free cancellation until 29 Jan
-                      </span>
+              <div>
+                <div class="rbox">
+                  <div
+                    v-for="(x, j) in h.rooms"
+                    :key="j"
+                    class="rrow"
+                    :style="{ '--j': j }"
+                  >
+                    <div class="ri">
+                      <svg class="i" viewBox="0 0 24 24">
+                        <path d="M3 18v-7a2 2 0 012-2h14a2 2 0 012 2v7M3 15h18M7 9V7a1 1 0 011-1h8a1 1 0 011 1v2" />
+                      </svg>
                     </div>
+                    <div class="rn">
+                      <b>{{ x[0] }}</b>
+                      <div class="rm">
+                        <span v-if="x[1] === 'Room only'" class="tag t2">
+                          <svg class="i" viewBox="0 0 24 24">
+                            <path d="M7 3v8M4.5 3v4a2.5 2.5 0 005 0V3M7 11v10M17 3c-2 2-3 5-3 8h3v10" />
+                          </svg>
+                          Room only
+                        </span>
+                        <span v-else class="tag t5">
+                          <svg class="i" viewBox="0 0 24 24">
+                            <path d="M4 8h13v6a5 5 0 01-5 5H9a5 5 0 01-5-5zM17 10h2a2 2 0 010 4h-2M7 2v2M11 2v2" />
+                          </svg>
+                          Breakfast included
+                        </span>
+                        <span class="rc">
+                          <svg class="i" viewBox="0 0 24 24">
+                            <path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z" />
+                            <path d="M8.5 12l2.5 2.5 4.5-5" />
+                          </svg>
+                          Free cancellation until 29 Jan
+                        </span>
+                      </div>
+                    </div>
+                    <div class="rp">
+                      <b class="mono">{{ money(x[2]) }}<small>USD</small></b>
+                      <span>{{ Math.round(x[2] / nightsCount) }} USD / night</span>
+                    </div>
+                    <button type="button" class="btn primary" @click="addBooking(h.n + ' - ' + x[0])">
+                      Book
+                    </button>
                   </div>
-                  <div class="rp">
-                    <b class="mono">{{ money(x[2]) }}<small>USD</small></b>
-                    <span>{{ Math.round(x[2] / nightsCount) }} USD / night</span>
-                  </div>
-                  <button type="button" class="btn primary" @click="addBooking(h.n + ' - ' + x[0])">
-                    Book
+
+                  <button v-if="h.opts > h.rooms.length" type="button" class="rmore">
+                    + {{ h.opts - h.rooms.length }} more room options
                   </button>
                 </div>
-
-                <button v-if="h.opts > h.rooms.length" type="button" class="rmore">
-                  + {{ h.opts - h.rooms.length }} more room options
-                </button>
               </div>
             </div>
           </article>
@@ -959,26 +956,26 @@ input[type=range] {
 .list {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
 }
 
 .card {
   position: relative;
   display: flex;
   flex-wrap: wrap;
+  align-items: stretch;
   background: var(--card);
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: 10px;
   overflow: hidden;
-  min-height: 232px;
   transition: transform 0.25s cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 0.25s, border-color 0.25s;
   animation: up 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
   animation-delay: calc(var(--i, 0) * 80ms);
 }
 
 .card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 16px 36px -14px rgba(40, 70, 140, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px -10px rgba(40, 70, 140, 0.22);
   border-color: #cdd8ec;
 }
 
@@ -995,7 +992,7 @@ input[type=range] {
 
 .photo {
   position: relative;
-  flex: 0 0 240px;
+  flex: 0 0 200px;
   background: var(--chip-bg);
   overflow: hidden;
 }
@@ -1015,10 +1012,10 @@ input[type=range] {
 
 .fav {
   position: absolute;
-  top: 10px;
-  left: 10px;
-  width: 34px;
-  height: 34px;
+  top: 8px;
+  left: 8px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
   border: 0;
   background: rgba(255, 255, 255, 0.94);
@@ -1026,7 +1023,7 @@ input[type=range] {
   place-items: center;
   cursor: pointer;
   color: #475169;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
   transition: transform 0.15s;
   z-index: 2;
 }
@@ -1036,8 +1033,8 @@ input[type=range] {
 }
 
 .fav svg {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
 }
 
 .fav[aria-pressed="true"] {
@@ -1057,23 +1054,23 @@ input[type=range] {
 
 .rib {
   position: absolute;
-  top: 12px;
-  right: 10px;
-  padding: 5px 10px;
+  top: 8px;
+  right: 8px;
+  padding: 4px 8px;
   border-radius: 999px;
   background: #0d8a58;
   color: #fff;
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 700;
   letter-spacing: 0.2px;
-  box-shadow: 0 2px 8px rgba(13, 138, 88, 0.4);
+  box-shadow: 0 2px 6px rgba(13, 138, 88, 0.35);
   z-index: 2;
 }
 
 .main {
   flex: 1;
   min-width: 0;
-  padding: 20px 24px 18px 16px;
+  padding: 14px 18px 12px 14px;
   display: flex;
   flex-direction: column;
 }
@@ -1083,7 +1080,7 @@ input[type=range] {
   align-items: center;
   gap: 8px;
   margin: 0;
-  font-size: 16px;
+  font-size: 15.5px;
   font-weight: 700;
   letter-spacing: -0.1px;
 }
@@ -1095,40 +1092,40 @@ input[type=range] {
 }
 
 .stars svg {
-  width: 15px;
-  height: 15px;
+  width: 14px;
+  height: 14px;
   fill: currentColor;
 }
 
 .room {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  margin-top: 12px;
+  gap: 6px;
+  margin-top: 8px;
   align-self: flex-start;
-  padding: 7px 11px;
+  padding: 5px 9px;
   background: var(--chip-bg);
   border: 1px solid var(--chip-line);
-  border-radius: 8px;
-  font-size: 12.5px;
+  border-radius: 6px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--chip-ink);
 }
 
 .room svg {
   stroke: var(--mute);
-  width: 15px;
-  height: 15px;
+  width: 14px;
+  height: 14px;
 }
 
 .amen {
-  margin: 14px 0 0;
+  margin: 10px 0 0;
   padding: 0;
   list-style: none;
   display: flex;
   flex-wrap: wrap;
-  gap: 6px 16px;
-  font-size: 12px;
+  gap: 4px 12px;
+  font-size: 11.5px;
   line-height: 1.4;
   color: var(--sub);
 }
@@ -1136,12 +1133,12 @@ input[type=range] {
 .amen li {
   display: inline-flex;
   align-items: flex-start;
-  gap: 6px;
+  gap: 5px;
 }
 
 .amen svg.i {
-  width: 13px;
-  height: 13px;
+  width: 12px;
+  height: 12px;
   margin-top: 1px;
   stroke: #2fa36f;
   stroke-width: 2;
@@ -1149,29 +1146,29 @@ input[type=range] {
 
 .tags {
   margin-top: auto;
-  padding-top: 16px;
+  padding-top: 10px;
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
 }
 
 .tag {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  height: 28px;
-  padding: 0 10px;
+  gap: 5px;
+  height: 25px;
+  padding: 0 8px;
   border: 1px solid transparent;
-  border-radius: 8px;
-  font-size: 12px;
+  border-radius: 6px;
+  font-size: 11.5px;
   font-weight: 600;
   line-height: 1;
   white-space: nowrap;
 }
 
 .tag svg.i, .seg svg.i {
-  width: 14px;
-  height: 14px;
+  width: 13px;
+  height: 13px;
   stroke-width: 1.9;
 }
 
@@ -1195,11 +1192,11 @@ input[type=range] {
 
 .seg {
   display: inline-flex;
-  height: 28px;
+  height: 25px;
   border: 1px solid #bfe6d2;
-  border-radius: 8px;
+  border-radius: 6px;
   overflow: hidden;
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 600;
   line-height: 1;
   white-space: nowrap;
@@ -1208,8 +1205,8 @@ input[type=range] {
 .seg > span {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 0 10px;
+  gap: 5px;
+  padding: 0 8px;
 }
 
 .seg .a {
@@ -1224,9 +1221,8 @@ input[type=range] {
 }
 
 .cside {
-  flex: 0 0 220px;
-  margin: 16px 0;
-  padding: 2px 18px 0 22px;
+  flex: 0 0 195px;
+  padding: 14px 16px 12px 18px;
   border-left: 1px solid var(--line);
   display: flex;
   flex-direction: column;
@@ -1237,8 +1233,8 @@ input[type=range] {
 .tl {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 12px;
+  gap: 5px;
+  font-size: 11.5px;
   font-weight: 600;
   color: var(--sub);
   direction: ltr;
@@ -1250,17 +1246,17 @@ input[type=range] {
 }
 
 .price {
-  margin-top: 6px;
-  font-size: 26px;
+  margin-top: 4px;
+  font-size: 22px;
   font-weight: 700;
-  letter-spacing: -0.8px;
+  letter-spacing: -0.5px;
   line-height: 1;
   white-space: nowrap;
   color: var(--ink);
 }
 
 .price small {
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 700;
   color: var(--mute);
   letter-spacing: 0;
@@ -1268,60 +1264,69 @@ input[type=range] {
 }
 
 .pn {
-  margin-top: 10px;
+  margin-top: 6px;
   display: inline-flex;
   align-items: baseline;
-  gap: 5px;
-  padding: 5px 9px;
+  gap: 4px;
+  padding: 4px 8px;
   background: var(--chip-bg);
   border: 1px solid var(--chip-line);
-  border-radius: 7px;
-  font-size: 11.5px;
+  border-radius: 6px;
+  font-size: 11px;
   color: var(--sub);
 }
 
 .pn b {
-  font-size: 12.5px;
+  font-size: 12px;
   color: var(--ink);
 }
 
 .fees {
-  margin-top: 10px;
+  margin-top: 6px;
   display: flex;
   align-items: center;
-  gap: 5px;
-  font-size: 11.5px;
+  gap: 4px;
+  font-size: 11px;
   color: var(--mute);
 }
 
 .fees svg.i {
-  width: 13px;
-  height: 13px;
+  width: 12px;
+  height: 12px;
   stroke: #2fa36f;
 }
 
 .actions {
   margin-top: auto;
-  padding-top: 16px;
+  padding-top: 10px;
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
+}
+
+.actions .btn {
+  height: 35px;
+  font-size: 12.5px;
+  padding: 0 12px;
+  border-radius: 6px;
 }
 
 /* Expandable rooms */
 .rooms {
   flex: 0 0 100%;
+  width: 100%;
   display: grid;
   grid-template-rows: 0fr;
-  transition: grid-template-rows 0.4s cubic-bezier(0.2, 0.7, 0.2, 1);
+  transition: grid-template-rows 0.35s cubic-bezier(0.2, 0.7, 0.2, 1);
   background: linear-gradient(180deg, #f1f5fd, #f8f9fc);
-  border-top: 0 solid var(--line);
+  border-top: 1px solid transparent;
+  overflow: hidden;
 }
 
 .card.open .rooms {
   grid-template-rows: 1fr;
-  border-top-width: 1px;
+  border-top-color: var(--line);
 }
 
 .rooms > div {
@@ -1330,35 +1335,19 @@ input[type=range] {
 }
 
 .rbox {
-  padding: 18px 24px 20px;
-}
-
-.rhead {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 12px;
-  font-size: 14px;
-  font-weight: 700;
-}
-
-.rhead span {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--mute);
+  padding: 14px 18px 16px;
 }
 
 .rrow {
   display: grid;
-  grid-template-columns: 44px 1fr auto auto;
-  gap: 16px;
+  grid-template-columns: 38px 1fr auto auto;
+  gap: 14px;
   align-items: center;
-  padding: 14px 16px;
-  margin-bottom: 10px;
+  padding: 10px 14px;
+  margin-bottom: 8px;
   background: var(--card);
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: 10px;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
@@ -1369,13 +1358,13 @@ input[type=range] {
 
 .rrow:hover {
   border-color: #b9cbee;
-  box-shadow: 0 8px 20px -12px rgba(60, 90, 160, 0.35);
+  box-shadow: 0 6px 16px -8px rgba(60, 90, 160, 0.3);
 }
 
 .ri {
-  width: 44px;
-  height: 44px;
-  border-radius: 11px;
+  width: 38px;
+  height: 38px;
+  border-radius: 9px;
   background: #eaf0fc;
   color: var(--btn);
   display: grid;
@@ -1383,47 +1372,47 @@ input[type=range] {
 }
 
 .ri svg {
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   stroke: currentColor;
 }
 
 .rn b {
   display: block;
-  font-size: 14px;
-  margin-bottom: 7px;
+  font-size: 13.5px;
+  margin-bottom: 5px;
 }
 
 .rm {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px 8px;
+  gap: 5px 7px;
   align-items: center;
 }
 
 .rm .tag {
-  height: 24px;
-  font-size: 11.5px;
-  padding: 0 8px;
+  height: 22px;
+  font-size: 11px;
+  padding: 0 7px;
 }
 
 .rm .tag svg.i {
-  width: 13px;
-  height: 13px;
+  width: 12px;
+  height: 12px;
 }
 
 .rc {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  font-size: 11.5px;
+  gap: 4px;
+  font-size: 11px;
   font-weight: 600;
   color: #0d8a58;
 }
 
 .rc svg {
-  width: 13px;
-  height: 13px;
+  width: 12px;
+  height: 12px;
 }
 
 .rp {
@@ -1433,36 +1422,38 @@ input[type=range] {
 
 .rp b {
   display: block;
-  font-size: 18px;
-  letter-spacing: -0.4px;
+  font-size: 16px;
+  letter-spacing: -0.3px;
 }
 
 .rp b small {
-  font-size: 11px;
+  font-size: 10.5px;
   color: var(--mute);
   margin-left: 3px;
   letter-spacing: 0;
 }
 
 .rp span {
-  font-size: 11.5px;
+  font-size: 11px;
   color: var(--mute);
 }
 
 .rrow .btn {
-  height: 38px;
-  padding: 0 24px;
+  height: 34px;
+  padding: 0 18px;
+  font-size: 12px;
+  border-radius: 6px;
 }
 
 .rmore {
   width: 100%;
-  height: 38px;
+  height: 34px;
   border: 1px dashed #b9cbee;
-  border-radius: 10px;
+  border-radius: 8px;
   background: transparent;
   color: var(--btn);
   font-weight: 600;
-  font-size: 12.5px;
+  font-size: 12px;
   cursor: pointer;
   transition: background 0.15s;
 }
@@ -1577,10 +1568,6 @@ input[type=range] {
   }
   .rbox {
     padding: 14px 12px 16px;
-  }
-  .rhead {
-    flex-direction: column;
-    gap: 2px;
   }
   .rrow {
     grid-template-columns: 44px 1fr;
