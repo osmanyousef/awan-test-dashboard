@@ -112,6 +112,10 @@ const dtf = computed(() => {
   }).format(tripDate)
 })
 
+const dateText = computed(() => (route.query.date as string) || dtf.value)
+const tripType = computed(() => (route.query.trip as string) || 'One way')
+const cabinClass = computed(() => (route.query.cabin as string) || 'Economy')
+
 // PRICING
 const tierDiffs = [0, 85, 310, 880]
 const tierDiff = computed(() => tierDiffs[selectedTierIndex.value] || 0)
@@ -241,37 +245,19 @@ function handleContinue() {
 
 <template>
   <div class="traveller-details-page">
-    <!-- Top Bar (matches FlightReviewPage style) -->
-    <header class="bar">
-      <div class="wrap bar-inner">
-        <button type="button" class="back" @click="goBack">
-          <svg class="i" viewBox="0 0 24 24">
-            <path d="M19 12H5M11 6l-6 6 6 6" />
-          </svg>
-          {{ t('back') }}
-        </button>
-
-        <span class="chip">
-          <b>{{ fromName }}</b>
-          <svg class="i" viewBox="0 0 24 24" style="width: 14px; height: 14px">
-            <path d="M3 12h18M15 6l6 6-6 6" />
-          </svg>
-          <b>{{ toName }}</b>
-        </span>
-
-        <span class="chip hide">
-          <svg class="i" viewBox="0 0 24 24">
-            <rect x="3" y="5" width="18" height="16" rx="2" />
-            <path d="M3 10h18M8 3v4M16 3v4" />
-          </svg>
-          {{ dtf }} · 1 Adult
-        </span>
-      </div>
-    </header>
-
     <!-- Deep Navy Hero Banner with 3-Step Wizard -->
     <section class="hero">
       <div class="wrap">
+        <!-- Back Navigation in Hero -->
+        <div class="hero-top">
+          <button type="button" class="hero-back" @click="goBack">
+            <svg class="i" viewBox="0 0 24 24">
+              <path d="M19 12H5M11 6l-6 6 6 6" />
+            </svg>
+            <span>Back to flight review</span>
+          </button>
+        </div>
+
         <ol class="steps">
           <li class="done clickable" role="button" tabindex="0" @click="goBack">
             <span class="n">
@@ -302,6 +288,55 @@ function handleContinue() {
     <div class="wrap lay">
       <main>
         <div class="stack" id="form">
+          <!-- Trip Overview Card: Clear, visible double-check bar for route & date -->
+          <div class="trip-check-card">
+            <div class="trip-check-card__item">
+              <span class="trip-check-card__icon-box route-icon">
+                <svg class="i" viewBox="0 0 24 24">
+                  <path d="M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z" />
+                </svg>
+              </span>
+              <div class="trip-check-card__text">
+                <small>Flight route</small>
+                <b>{{ fromName }} ({{ fromCode }}) → {{ toName }} ({{ toCode }})</b>
+              </div>
+            </div>
+
+            <div class="trip-check-card__sep"></div>
+
+            <div class="trip-check-card__item">
+              <span class="trip-check-card__icon-box date-icon">
+                <svg class="i" viewBox="0 0 24 24">
+                  <rect x="3" y="5" width="18" height="16" rx="2" />
+                  <path d="M3 10h18M8 3v4M16 3v4" />
+                </svg>
+              </span>
+              <div class="trip-check-card__text">
+                <small>Travel date</small>
+                <b>{{ dateText }} · {{ tripType }}</b>
+              </div>
+            </div>
+
+            <div class="trip-check-card__sep hide-sm"></div>
+
+            <div class="trip-check-card__item hide-sm">
+              <span class="trip-check-card__icon-box air-icon">
+                <svg class="i" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="9" />
+                  <path d="M12 3a9 9 0 0 0 0 18M3 12h18" />
+                </svg>
+              </span>
+              <div class="trip-check-card__text">
+                <small>Airline & Cabin</small>
+                <b>{{ rawFlight.al }} · {{ cabinClass }}</b>
+              </div>
+            </div>
+
+            <button type="button" class="trip-check-card__btn" @click="goBack" title="Change flight or travel date">
+              <span>Change</span>
+            </button>
+          </div>
+
           <!-- Traveller 1 Card -->
           <section class="card pad">
             <div class="th">
@@ -601,8 +636,17 @@ function handleContinue() {
             <i class="mono">{{ toCode }}</i>
           </div>
 
+          <div class="sum-date-badge">
+            <svg class="i" viewBox="0 0 24 24">
+              <rect x="3" y="5" width="18" height="16" rx="2" />
+              <path d="M3 10h18M8 3v4M16 3v4" />
+            </svg>
+            <b>{{ dateText }}</b>
+            <span>· {{ tripType }}</span>
+          </div>
+
           <p class="sub">
-            {{ dtf }} · {{ rawFlight.al }} · 1 Adult
+            {{ rawFlight.al }} · {{ cabinClass }} · 1 Adult
           </p>
 
           <div class="rows">
@@ -779,62 +823,138 @@ button {
   background: var(--btn);
 }
 
-/* ── Top Bar ─────────────────────────────────────────────── */
-.bar {
-  position: sticky;
-  top: 0;
-  z-index: 20;
-  background: rgba(255, 255, 255, 0.88);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(12, 31, 68, 0.08);
+/* ── Hero Top Back Button ───────────────────────────────── */
+.hero-top {
+  margin-bottom: 20px;
 }
 
-.bar-inner {
+.hero-back {
+  appearance: none;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 8px;
+  color: #c9d7f3;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 6px 14px;
+  transition: all 0.15s ease;
+}
+
+.hero-back:hover {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.hero-back svg {
+  width: 15px;
+  height: 15px;
+}
+
+/* ── Trip Overview Check Card ────────────────────────────── */
+.trip-check-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 18px;
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(12, 31, 68, 0.04);
+}
+
+.trip-check-card__item {
   display: flex;
   align-items: center;
   gap: 10px;
-  flex-wrap: wrap;
-  min-height: 54px;
-  padding-block: 8px;
 }
 
-.chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  height: 34px;
-  padding: 0 12px;
-  border: 1px solid var(--line);
+.trip-check-card__icon-box {
+  width: 32px;
+  height: 32px;
   border-radius: 8px;
-  background: #f6f8fd;
-  color: var(--sub);
-  font-size: 12.5px;
+  background: var(--soft);
+  color: var(--btn);
+  display: grid;
+  place-items: center;
+  flex: none;
 }
 
-.chip b {
+.trip-check-card__text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.trip-check-card__text small {
+  font-size: 11px;
+  color: var(--mute);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  font-weight: 600;
+}
+
+.trip-check-card__text b,
+.trip-check-card__text strong {
+  font-size: 13px;
   color: var(--ink);
   font-weight: 600;
 }
 
-.chip svg {
-  color: var(--btn);
+.trip-check-card__sep {
+  width: 1px;
+  height: 28px;
+  background: var(--line);
+  flex: none;
 }
 
-.back {
+.trip-check-card__btn {
   appearance: none;
+  margin-inline-start: auto;
+  border: 1px solid var(--line);
+  background: #f8fafc;
+  color: var(--btn);
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex: none;
+}
+
+.trip-check-card__btn:hover {
+  background: var(--soft);
+  border-color: var(--btn);
+}
+
+/* ── Summary Date Badge in Sidebar ────────────────────────── */
+.sum-date-badge {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  height: 34px;
-  padding: 0 12px 0 8px;
-  border: 0;
-  border-radius: 8px;
-  background: none;
+  background: #f1f5fd;
+  border: 1px solid #d9e3f3;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
+  color: var(--sub);
+  margin-bottom: 8px;
+}
+
+.sum-date-badge svg {
   color: var(--btn);
+  width: 14px;
+  height: 14px;
+}
+
+.sum-date-badge b {
+  color: var(--ink);
   font-weight: 600;
-  font-size: 13px;
-  cursor: pointer;
 }
 
 /* ── Hero Banner with Step Wizard ────────────────────────── */
@@ -1408,6 +1528,20 @@ input[type="date"].in {
     padding-bottom: 84px;
   }
   .steps li:not(.cur) b {
+    display: none;
+  }
+  .trip-check-card {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .trip-check-card__sep {
+    display: none;
+  }
+  .trip-check-card__btn {
+    align-self: flex-start;
+  }
+  .hide-sm {
     display: none;
   }
   .hide {

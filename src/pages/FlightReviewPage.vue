@@ -252,42 +252,6 @@ function continueBooking() {
 
 <template>
   <div class="flight-review-page">
-    <!-- Sticky Navigation Top Bar -->
-    <header class="bar">
-      <div class="wrap bar-inner">
-        <button type="button" class="back" @click="goBack">
-          <svg class="i" viewBox="0 0 24 24">
-            <path d="M19 12H5M11 6l-6 6 6 6" />
-          </svg>
-          Back to results
-        </button>
-
-        <span class="chip">
-          <b>{{ originName }}</b><i>{{ originCode }}</i>
-          <svg class="i" viewBox="0 0 24 24" style="width: 14px; height: 14px">
-            <path d="M3 12h18M15 6l6 6-6 6" />
-          </svg>
-          <b>{{ destName }}</b><i>{{ destCode }}</i>
-        </span>
-
-        <span class="chip hide">
-          <svg class="i" viewBox="0 0 24 24">
-            <rect x="3" y="5" width="18" height="16" rx="2" />
-            <path d="M3 10h18M8 3v4M16 3v4" />
-          </svg>
-          {{ dateText }} · {{ tripType }}
-        </span>
-
-        <span class="chip hide">
-          <svg class="i" viewBox="0 0 24 24">
-            <circle cx="12" cy="8" r="4" />
-            <path d="M4 21c0-4 3.6-7 8-7s8 3 8 7" />
-          </svg>
-          1 adult · {{ cabinClass }}
-        </span>
-      </div>
-    </header>
-
     <!-- Deep Navy Hero Banner with Flight Arc -->
     <section class="hero">
       <svg class="arc" viewBox="0 0 420 96" aria-hidden="true">
@@ -305,6 +269,16 @@ function continueBooking() {
         </g>
       </svg>
       <div class="wrap">
+        <!-- Back Navigation in Hero -->
+        <div class="hero-top">
+          <button type="button" class="hero-back" @click="goBack">
+            <svg class="i" viewBox="0 0 24 24">
+              <path d="M19 12H5M11 6l-6 6 6 6" />
+            </svg>
+            <span>Back to results</span>
+          </button>
+        </div>
+
         <!-- 3-Step Wizard Indicator -->
         <ol class="steps">
           <li class="cur" aria-current="step">
@@ -324,7 +298,13 @@ function continueBooking() {
         </ol>
 
         <h1>Review your flight</h1>
-        <p>Check the details below, then continue to passenger information.</p>
+        <p class="hero-trip-summary">
+          <span>{{ originName }} ({{ originCode }}) → {{ destName }} ({{ destCode }})</span>
+          <span class="dot">·</span>
+          <span>{{ dateText }}</span>
+          <span class="dot">·</span>
+          <span>{{ tripType }}</span>
+        </p>
       </div>
     </section>
 
@@ -789,78 +769,36 @@ button {
   background: var(--btn);
 }
 
-/* ── Top Bar ─────────────────────────────────────────────── */
-.bar {
-  position: sticky;
-  top: 0;
-  z-index: 20;
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(12, 31, 68, 0.08);
+/* ── Hero Top Back Button ───────────────────────────────── */
+.hero-top {
+  margin-bottom: 20px;
 }
 
-.bar-inner {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  min-height: 54px;
-  padding-top: 8px;
-  padding-bottom: 8px;
-}
-
-.back {
+.hero-back {
   appearance: none;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 8px;
+  color: #c9d7f3;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  height: 34px;
-  padding: 0 12px 0 8px;
-  border: 0;
-  border-radius: 8px;
-  background: none;
-  color: var(--btn);
-  font-weight: 600;
+  gap: 8px;
   font-size: 13px;
+  font-weight: 500;
   cursor: pointer;
+  padding: 6px 14px;
+  transition: all 0.15s ease;
 }
 
-.back:hover {
-  background: var(--soft);
+.hero-back:hover {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
-.back svg {
-  width: 17px;
-  height: 17px;
-}
-
-.chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  height: 34px;
-  padding: 0 12px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #f6f8fd;
-  color: var(--sub);
-  font-size: 12.5px;
-}
-
-.chip b {
-  color: var(--ink);
-  font-weight: 600;
-}
-
-.chip svg {
-  color: var(--btn);
-}
-
-.chip i {
-  font-style: normal;
-  color: var(--mute);
-  font-size: 11px;
+.hero-back svg {
+  width: 15px;
+  height: 15px;
 }
 
 /* ── Hero Section with Arc ───────────────────────────────── */
