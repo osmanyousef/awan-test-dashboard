@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   FLIGHTS,
@@ -160,6 +160,16 @@ const D = ref({
 
 const touched = ref<Record<string, boolean>>({})
 
+onMounted(() => {
+  try {
+    const raw = sessionStorage.getItem('awan_traveller_details')
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      Object.assign(D.value, parsed)
+    }
+  } catch {}
+})
+
 function parseDate(s: string): Date | null {
   const m = /^(\d{4})-(\d\d)-(\d\d)$/.exec(s || '')
   if (!m) return null
@@ -236,9 +246,16 @@ function handleContinue() {
       badEl.scrollIntoView({ block: 'center', behavior: 'smooth' })
       const input = badEl.querySelector('input, select') as HTMLElement | null
       if (input) input.focus({ preventScroll: true })
+      showToast('Please check the highlighted required fields')
       return
     }
-    showToast(t('ok'))
+    try {
+      sessionStorage.setItem('awan_traveller_details', JSON.stringify(D.value))
+    } catch {}
+    router.push({
+      path: '/flights/pay',
+      query: route.query,
+    })
   }, 50)
 }
 </script>
