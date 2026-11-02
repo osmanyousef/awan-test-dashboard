@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 
 const router = createRouter({
   history: createWebHistory(),
+  scrollBehavior: () => ({ top: 0, left: 0, behavior: 'instant' }),
   routes: [
     // Primary landing page: Bedsonline / OTA Booking Engine (Hotels & Flights)
     { path: '/', component: () => import('../pages/HomePage.vue') },
@@ -10,6 +11,7 @@ const router = createRouter({
     { path: '/flights', component: () => import('../pages/HomePage.vue') },
     { path: '/flights/results', component: () => import('../pages/FlightResultsPage.vue') },
     { path: '/flights/review', component: () => import('../pages/FlightReviewPage.vue') },
+    { path: '/flights/traveller', component: () => import('../pages/TravellerDetailsPage.vue') },
 
     // Dashboard overview
     { path: '/dashboard', component: () => import('../pages/DashboardPage.vue') },

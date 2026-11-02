@@ -234,20 +234,7 @@ function onLogoError() {
   }
 }
 
-// ── Toast Notification & Actions ───────────────────────────
-const toastMessage = ref('')
-const toastVisible = ref(false)
-let toastTimer: ReturnType<typeof setTimeout> | null = null
-
-function showToast(msg: string) {
-  toastMessage.value = msg
-  toastVisible.value = true
-  if (toastTimer) clearTimeout(toastTimer)
-  toastTimer = setTimeout(() => {
-    toastVisible.value = false
-  }, 2200)
-}
-
+// ── Actions ─────────────────────────────────────────────────
 function goBack() {
   router.push({
     path: '/flights/results',
@@ -256,7 +243,10 @@ function goBack() {
 }
 
 function continueBooking() {
-  showToast('Continuing to passenger details...')
+  router.push({
+    path: '/flights/traveller',
+    query: route.query,
+  })
 }
 </script>
 
@@ -315,6 +305,24 @@ function continueBooking() {
         </g>
       </svg>
       <div class="wrap">
+        <!-- 3-Step Wizard Indicator -->
+        <ol class="steps">
+          <li class="cur" aria-current="step">
+            <span class="n">1</span>
+            <b>Select flight</b>
+          </li>
+          <li class="sl"></li>
+          <li class="clickable" role="button" tabindex="0" @click="continueBooking">
+            <span class="n">2</span>
+            <b>Traveller details</b>
+          </li>
+          <li class="sl"></li>
+          <li>
+            <span class="n">3</span>
+            <b>Review & pay</b>
+          </li>
+        </ol>
+
         <h1>Review your flight</h1>
         <p>Check the details below, then continue to passenger information.</p>
       </div>
@@ -675,11 +683,6 @@ function continueBooking() {
         Continue
       </button>
     </div>
-
-    <!-- Floating Toast Notification -->
-    <div class="toast" :class="{ on: toastVisible }" role="status" aria-live="polite">
-      {{ toastMessage }}
-    </div>
   </div>
 </template>
 
@@ -866,7 +869,7 @@ button {
   overflow: hidden;
   background: var(--navy);
   color: #fff;
-  padding: 30px 0 96px;
+  padding: 34px 0 106px;
   background-image: radial-gradient(rgba(255, 255, 255, 0.09) 1px, transparent 1.2px);
   background-size: 18px 18px;
 }
@@ -874,6 +877,81 @@ button {
 .hero .wrap {
   position: relative;
   z-index: 1;
+}
+
+/* ── 3-Step Wizard Indicator ─────────────────────────────── */
+.steps {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  list-style: none;
+  margin: 0 0 24px;
+  padding: 0;
+  max-width: 580px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #a9bde6;
+}
+
+.steps li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.steps .n {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  border: 1.5px solid rgba(255, 255, 255, 0.3);
+  font-size: 12px;
+}
+
+.steps .done {
+  color: #fff;
+}
+
+.steps .done .n {
+  background: #2fbf86;
+  border-color: #2fbf86;
+  color: #fff;
+}
+
+.steps .cur {
+  color: #fff;
+}
+
+.steps .cur .n {
+  background: #fff;
+  border-color: #fff;
+  color: var(--navy);
+}
+
+.steps .sl {
+  flex: 1;
+  height: 2px;
+  min-width: 16px;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.steps .sl.on {
+  background: #2fbf86;
+}
+
+.steps .clickable {
+  cursor: pointer;
+  transition: opacity 0.15s, color 0.15s;
+}
+
+.steps .clickable:hover {
+  color: #fff;
+}
+
+.steps .clickable:hover .n {
+  border-color: rgba(255, 255, 255, 0.65);
 }
 
 .hero h1 {
@@ -1579,6 +1657,9 @@ button {
   }
   .hero h1 {
     font-size: 23px;
+  }
+  .steps li:not(.cur) b {
+    display: none;
   }
   .arc {
     display: none;
