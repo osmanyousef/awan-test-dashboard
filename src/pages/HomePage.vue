@@ -403,7 +403,17 @@ function handleSearch() {
       }
     })
   } else {
-    searchPerformed.value = true
+    router.push({
+      path: '/flights/results',
+      query: {
+        from: flightFrom.value,
+        to: flightTo.value,
+        trip: flightTripType.value === 'return' ? 'Round trip' : flightTripType.value === 'one-way' ? 'One way' : 'Multi-city',
+        cabin: flightCabinClass.value,
+        direct: flightDirectOnly.value ? 'true' : 'false',
+        date: formatTextDate(startDate.value),
+      }
+    })
   }
 }
 
