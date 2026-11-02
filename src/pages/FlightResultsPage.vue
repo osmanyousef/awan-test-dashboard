@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useRoute, RouterLink } from 'vue-router'
+import { useRoute, useRouter, RouterLink } from 'vue-router'
 import {
   FLIGHTS,
   TIMEZONES,
@@ -11,6 +11,7 @@ import {
 } from '../config/flightsData'
 
 const route = useRoute()
+const router = useRouter()
 
 // ── Search Summary from Route Query or Defaults ───────────
 const originText = computed(() => {
@@ -376,24 +377,22 @@ function getCardTotal(f: ProcessedFlight): number {
   return f.price + tier.d + bags * 50
 }
 
-// ── Toast Notification ─────────────────────────────────────
-const toastMessage = ref('')
-const toastVisible = ref(false)
-let toastTimer: ReturnType<typeof setTimeout> | null = null
-
-function showToast(msg: string) {
-  toastMessage.value = msg
-  toastVisible.value = true
-  if (toastTimer) clearTimeout(toastTimer)
-  toastTimer = setTimeout(() => {
-    toastVisible.value = false
-  }, 2400)
-}
-
 function bookFlight(f: ProcessedFlight) {
   const k = selectedFares.value[f.id] ?? 0
-  const tier = getTiers(f)[k]
-  showToast(`${f.al} ${f.nos[0]} · ${tier.n} selected`)
+  const bags = extraBags.value[f.id] ?? 0
+  router.push({
+    path: '/flights/review',
+    query: {
+      id: String(f.id),
+      tier: String(k),
+      bags: String(bags),
+      from: (route.query.from as string) || 'TUN - Tunis',
+      to: (route.query.to as string) || 'KUL - Kuala Lumpur',
+      date: (route.query.date as string) || 'Wed, 2 Dec',
+      trip: (route.query.trip as string) || 'One way',
+      cabin: (route.query.cabin as string) || 'Economy',
+    },
+  })
 }
 
 onMounted(() => {
@@ -1123,11 +1122,6 @@ onMounted(() => {
           Prices are per adult and include taxes and fees. Fares can change until you complete your booking.
         </p>
       </main>
-    </div>
-
-    <!-- Floating Toast Notification -->
-    <div class="toast" :class="{ on: toastVisible }" role="status" aria-live="polite">
-      {{ toastMessage }}
     </div>
   </div>
 </template>
