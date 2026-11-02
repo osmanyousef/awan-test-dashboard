@@ -34,9 +34,15 @@ import ToastNotification from '../components/ToastNotification.vue'
 }
 
 .container {
-  max-width: 1280px;
+  max-width: 1560px;
   margin: 0 auto;
   padding: 0 24px;
   width: 100%;
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 0 16px;
+  }
 }
 </style>

@@ -589,9 +589,10 @@ button, input, select {
 }
 
 .wrap {
-  max-width: 1344px;
+  max-width: 1560px;
   margin: 0 auto;
-  padding: 0 16px;
+  padding: 0;
+  width: 100%;
 }
 
 svg.i {
@@ -956,7 +957,7 @@ input[type=range] {
 .list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 20px;
 }
 
 .card {
@@ -964,9 +965,10 @@ input[type=range] {
   display: flex;
   flex-wrap: wrap;
   align-items: stretch;
+  min-height: 240px;
   background: var(--card);
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: 14px;
   overflow: hidden;
   transition: transform 0.25s cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 0.25s, border-color 0.25s;
   animation: up 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
@@ -975,7 +977,7 @@ input[type=range] {
 
 .card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 12px 28px -10px rgba(40, 70, 140, 0.22);
+  box-shadow: 0 14px 32px -10px rgba(40, 70, 140, 0.24);
   border-color: #cdd8ec;
 }
 
@@ -992,7 +994,8 @@ input[type=range] {
 
 .photo {
   position: relative;
-  flex: 0 0 200px;
+  flex: 0 0 280px;
+  min-height: 240px;
   background: var(--chip-bg);
   overflow: hidden;
 }
@@ -1012,10 +1015,10 @@ input[type=range] {
 
 .fav {
   position: absolute;
-  top: 8px;
-  left: 8px;
-  width: 30px;
-  height: 30px;
+  top: 12px;
+  left: 12px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   border: 0;
   background: rgba(255, 255, 255, 0.94);
@@ -1023,18 +1026,19 @@ input[type=range] {
   place-items: center;
   cursor: pointer;
   color: #475169;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
-  transition: transform 0.15s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+  transition: transform 0.15s, background 0.15s;
   z-index: 2;
 }
 
 .fav:hover {
   transform: scale(1.1);
+  background: #ffffff;
 }
 
 .fav svg {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
 }
 
 .fav[aria-pressed="true"] {
@@ -1054,23 +1058,23 @@ input[type=range] {
 
 .rib {
   position: absolute;
-  top: 8px;
-  right: 8px;
-  padding: 4px 8px;
+  top: 12px;
+  right: 12px;
+  padding: 5px 12px;
   border-radius: 999px;
   background: #0d8a58;
   color: #fff;
-  font-size: 10.5px;
+  font-size: 11.5px;
   font-weight: 700;
   letter-spacing: 0.2px;
-  box-shadow: 0 2px 6px rgba(13, 138, 88, 0.35);
+  box-shadow: 0 2px 8px rgba(13, 138, 88, 0.35);
   z-index: 2;
 }
 
 .main {
   flex: 1;
   min-width: 0;
-  padding: 14px 18px 12px 14px;
+  padding: 22px 24px 20px 24px;
   display: flex;
   flex-direction: column;
 }
@@ -1078,98 +1082,98 @@ input[type=range] {
 .title {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   margin: 0;
-  font-size: 15.5px;
+  font-size: 19px;
   font-weight: 700;
-  letter-spacing: -0.1px;
+  letter-spacing: -0.2px;
+  line-height: 1.3;
 }
 
 .stars {
   display: flex;
-  gap: 1px;
+  gap: 2px;
   color: var(--star);
 }
 
 .stars svg {
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
   fill: currentColor;
 }
 
 .room {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  margin-top: 8px;
+  gap: 7px;
+  margin-top: 10px;
   align-self: flex-start;
-  padding: 5px 9px;
+  padding: 6px 12px;
   background: var(--chip-bg);
   border: 1px solid var(--chip-line);
-  border-radius: 6px;
-  font-size: 12px;
+  border-radius: 8px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--chip-ink);
 }
 
 .room svg {
   stroke: var(--mute);
-  width: 14px;
-  height: 14px;
+  width: 15px;
+  height: 15px;
 }
 
 .amen {
-  margin: 10px 0 0;
+  margin: 14px 0 0;
   padding: 0;
   list-style: none;
   display: flex;
   flex-wrap: wrap;
-  gap: 4px 12px;
-  font-size: 11.5px;
-  line-height: 1.4;
+  gap: 8px 18px;
+  font-size: 13px;
+  line-height: 1.5;
   color: var(--sub);
 }
 
 .amen li {
   display: inline-flex;
-  align-items: flex-start;
-  gap: 5px;
+  align-items: center;
+  gap: 6px;
 }
 
 .amen svg.i {
-  width: 12px;
-  height: 12px;
-  margin-top: 1px;
+  width: 14px;
+  height: 14px;
   stroke: #2fa36f;
-  stroke-width: 2;
+  stroke-width: 2.2;
 }
 
 .tags {
   margin-top: auto;
-  padding-top: 10px;
+  padding-top: 18px;
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 8px;
 }
 
 .tag {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  height: 25px;
-  padding: 0 8px;
+  gap: 6px;
+  height: 30px;
+  padding: 0 12px;
   border: 1px solid transparent;
-  border-radius: 6px;
-  font-size: 11.5px;
+  border-radius: 8px;
+  font-size: 12.5px;
   font-weight: 600;
   line-height: 1;
   white-space: nowrap;
 }
 
 .tag svg.i, .seg svg.i {
-  width: 13px;
-  height: 13px;
-  stroke-width: 1.9;
+  width: 14px;
+  height: 14px;
+  stroke-width: 2;
 }
 
 .t1 {
@@ -1192,11 +1196,11 @@ input[type=range] {
 
 .seg {
   display: inline-flex;
-  height: 25px;
+  height: 30px;
   border: 1px solid #bfe6d2;
-  border-radius: 6px;
+  border-radius: 8px;
   overflow: hidden;
-  font-size: 11.5px;
+  font-size: 12.5px;
   font-weight: 600;
   line-height: 1;
   white-space: nowrap;
@@ -1205,8 +1209,8 @@ input[type=range] {
 .seg > span {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 0 8px;
+  gap: 6px;
+  padding: 0 12px;
 }
 
 .seg .a {
@@ -1221,8 +1225,8 @@ input[type=range] {
 }
 
 .cside {
-  flex: 0 0 195px;
-  padding: 14px 16px 12px 18px;
+  flex: 0 0 240px;
+  padding: 22px 22px 20px 24px;
   border-left: 1px solid var(--line);
   display: flex;
   flex-direction: column;
@@ -1233,8 +1237,8 @@ input[type=range] {
 .tl {
   display: flex;
   align-items: center;
-  gap: 5px;
-  font-size: 11.5px;
+  gap: 6px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--sub);
   direction: ltr;
@@ -1246,70 +1250,71 @@ input[type=range] {
 }
 
 .price {
-  margin-top: 4px;
-  font-size: 22px;
-  font-weight: 700;
+  margin-top: 6px;
+  font-size: 28px;
+  font-weight: 800;
   letter-spacing: -0.5px;
-  line-height: 1;
+  line-height: 1.1;
   white-space: nowrap;
   color: var(--ink);
 }
 
 .price small {
-  font-size: 11.5px;
+  font-size: 13px;
   font-weight: 700;
   color: var(--mute);
   letter-spacing: 0;
-  margin-left: 4px;
+  margin-left: 5px;
 }
 
 .pn {
-  margin-top: 6px;
+  margin-top: 8px;
   display: inline-flex;
   align-items: baseline;
-  gap: 4px;
-  padding: 4px 8px;
+  gap: 5px;
+  padding: 6px 12px;
   background: var(--chip-bg);
   border: 1px solid var(--chip-line);
-  border-radius: 6px;
-  font-size: 11px;
+  border-radius: 8px;
+  font-size: 12px;
   color: var(--sub);
 }
 
 .pn b {
-  font-size: 12px;
+  font-size: 13.5px;
   color: var(--ink);
 }
 
 .fees {
-  margin-top: 6px;
+  margin-top: 8px;
   display: flex;
   align-items: center;
-  gap: 4px;
-  font-size: 11px;
+  gap: 6px;
+  font-size: 12px;
   color: var(--mute);
 }
 
 .fees svg.i {
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
   stroke: #2fa36f;
 }
 
 .actions {
   margin-top: auto;
-  padding-top: 10px;
+  padding-top: 18px;
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .actions .btn {
-  height: 35px;
-  font-size: 12.5px;
-  padding: 0 12px;
-  border-radius: 6px;
+  height: 40px;
+  font-size: 13.5px;
+  font-weight: 600;
+  padding: 0 16px;
+  border-radius: 8px;
 }
 
 /* Expandable rooms */
@@ -1335,19 +1340,19 @@ input[type=range] {
 }
 
 .rbox {
-  padding: 14px 18px 16px;
+  padding: 18px 24px 20px;
 }
 
 .rrow {
   display: grid;
-  grid-template-columns: 38px 1fr auto auto;
-  gap: 14px;
+  grid-template-columns: 42px 1fr auto auto;
+  gap: 16px;
   align-items: center;
-  padding: 10px 14px;
-  margin-bottom: 8px;
+  padding: 12px 18px;
+  margin-bottom: 10px;
   background: var(--card);
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: 12px;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
@@ -1362,9 +1367,9 @@ input[type=range] {
 }
 
 .ri {
-  width: 38px;
-  height: 38px;
-  border-radius: 9px;
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
   background: #eaf0fc;
   color: var(--btn);
   display: grid;
@@ -1372,47 +1377,47 @@ input[type=range] {
 }
 
 .ri svg {
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
   stroke: currentColor;
 }
 
 .rn b {
   display: block;
-  font-size: 13.5px;
-  margin-bottom: 5px;
+  font-size: 14.5px;
+  margin-bottom: 6px;
 }
 
 .rm {
   display: flex;
   flex-wrap: wrap;
-  gap: 5px 7px;
+  gap: 6px 9px;
   align-items: center;
 }
 
 .rm .tag {
-  height: 22px;
-  font-size: 11px;
-  padding: 0 7px;
+  height: 25px;
+  font-size: 11.5px;
+  padding: 0 9px;
 }
 
 .rm .tag svg.i {
-  width: 12px;
-  height: 12px;
+  width: 13px;
+  height: 13px;
 }
 
 .rc {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  font-size: 11px;
+  gap: 5px;
+  font-size: 12px;
   font-weight: 600;
   color: #0d8a58;
 }
 
 .rc svg {
-  width: 12px;
-  height: 12px;
+  width: 13px;
+  height: 13px;
 }
 
 .rp {
@@ -1422,38 +1427,39 @@ input[type=range] {
 
 .rp b {
   display: block;
-  font-size: 16px;
+  font-size: 18px;
   letter-spacing: -0.3px;
 }
 
 .rp b small {
-  font-size: 10.5px;
+  font-size: 11.5px;
   color: var(--mute);
-  margin-left: 3px;
+  margin-left: 4px;
   letter-spacing: 0;
 }
 
 .rp span {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--mute);
 }
 
 .rrow .btn {
-  height: 34px;
-  padding: 0 18px;
-  font-size: 12px;
-  border-radius: 6px;
+  height: 38px;
+  padding: 0 20px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 8px;
 }
 
 .rmore {
   width: 100%;
-  height: 34px;
+  height: 38px;
   border: 1px dashed #b9cbee;
   border-radius: 8px;
   background: transparent;
   color: var(--btn);
   font-weight: 600;
-  font-size: 12px;
+  font-size: 13px;
   cursor: pointer;
   transition: background 0.15s;
 }
@@ -1527,7 +1533,7 @@ input[type=range] {
 
 @media (max-width: 760px) {
   .wrap {
-    padding: 0 14px;
+    padding: 0;
   }
   .sum .sp {
     margin-left: 0;

@@ -293,7 +293,7 @@ function formatCurrency(n: number) {
 }
 
 .header-container {
-  max-width: 1280px;
+  max-width: 1560px;
   margin: 0 auto;
   display: flex;
   align-items: center;
