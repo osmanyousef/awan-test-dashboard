@@ -3,7 +3,6 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useFlightBooking } from '../composables/useFlightBooking'
 import FlightStepHero from '../components/flights/FlightStepHero.vue'
-import TripCheckBar from '../components/flights/TripCheckBar.vue'
 import BookingSummarySidebar from '../components/flights/BookingSummarySidebar.vue'
 
 const router = useRouter()
@@ -177,7 +176,7 @@ function handleContinue() {
     <FlightStepHero
       :current-step="2"
       title="Traveller details"
-      subtitle="Enter names exactly as they appear on the passport. All fields are required."
+      :subtitle="`${fromCode} → ${toCode} · ${dateText} · ${cabinClass} — Enter names exactly as they appear on the passport.`"
       back-label="Back to flight review"
       back-route="/flights/review"
     />
@@ -187,16 +186,6 @@ function handleContinue() {
       <div class="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-5 items-start">
         <!-- Left Column: Forms -->
         <main class="space-y-4">
-          <!-- Trip Overview Double-Check Bar -->
-          <TripCheckBar
-            :origin-code="fromCode"
-            :origin-name="fromName"
-            :dest-code="toCode"
-            :dest-name="toName"
-            :date-text="dateText"
-            :cabin-class="cabinClass"
-          />
-
           <!-- Traveller 1 Card -->
           <section class="bg-white rounded-2xl border border-[#d3dff1] p-5 sm:p-6 shadow-xs">
             <div class="flex items-center gap-2.5 flex-wrap mb-5">

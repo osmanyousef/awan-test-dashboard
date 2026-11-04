@@ -67,8 +67,8 @@ function formatMoney(amount: number): string {
 </script>
 
 <template>
-  <aside class="w-full lg:w-[320px] shrink-0">
-    <div class="bg-white rounded-2xl border border-[#d3dff1] p-5 shadow-xs sticky top-5">
+  <aside class="w-full lg:w-[320px] shrink-0 lg:sticky lg:top-[84px] self-start z-20">
+    <div class="bg-white rounded-2xl border border-[#d3dff1] p-5 shadow-xs">
       <!-- Title -->
       <h3 class="text-base font-bold text-[#0c1f44] m-0 mb-3">
         {{ title }}

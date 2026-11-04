@@ -1,10 +1,13 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { dashboardStats, currentUser } from '../config/mockData'
 
 const route = useRoute()
 const activeDropdown = ref<string | null>(null)
+const isFlightBookingPage = computed(() =>
+  ['/flights/review', '/flights/traveller', '/flights/pay'].includes(route.path)
+)
 const accountMenuOpen = ref(false)
 let closeTimeout: ReturnType<typeof setTimeout> | null = null
 
@@ -72,7 +75,7 @@ function formatCurrency(n: number) {
 </script>
 
 <template>
-  <header class="header">
+  <header class="header" :class="{ 'header--dark': isFlightBookingPage }">
     <div class="header-container">
       <!-- Left: Official Awan Travel Logo -->
       <RouterLink to="/" class="brand">
@@ -290,6 +293,60 @@ function formatCurrency(n: number) {
   top: 0;
   z-index: 50;
   border-bottom: 1px solid rgba(204, 216, 230, 0.7);
+}
+
+.header--dark {
+  background: #0c1f44;
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+.header--dark .nav-link {
+  color: #c9d7f3;
+}
+
+.header--dark .nav-link:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.header--dark .nav-link--active {
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #fff;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.header--dark .wallet-chip {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(16, 185, 129, 0.5);
+}
+
+.header--dark .wallet-chip:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.header--dark .wallet-label {
+  color: #86efac;
+}
+
+.header--dark .wallet-amount {
+  color: #d1fae5;
+}
+
+.header--dark .action-icon-btn {
+  color: #c9d7f3;
+}
+
+.header--dark .action-icon-btn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.header--dark .user-name-text {
+  color: #c9d7f3;
+}
+
+.header--dark .user-profile-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .header-container {

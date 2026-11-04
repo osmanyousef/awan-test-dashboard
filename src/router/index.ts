@@ -29,6 +29,7 @@ const router = createRouter({
     { path: '/agency/settings', component: () => import('../pages/AgencySettingsPage.vue') },
 
     // Operations
+    { path: '/bookings', redirect: '/operations/bookings' },
     { path: '/operations/bookings', component: () => import('../pages/BookingsPage.vue') },
     { path: '/operations/amendments', component: () => import('../pages/AmendmentsPage.vue') },
 
