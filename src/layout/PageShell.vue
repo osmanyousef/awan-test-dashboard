@@ -9,6 +9,8 @@ const isFlushPage = computed(() => {
   return (
     route.path === '/' ||
     route.path === '/hotels' ||
+    route.path === '/hotels/details' ||
+    route.path.startsWith('/hotels/details') ||
     route.path === '/flights' ||
     route.path === '/flights/review' ||
     route.path === '/flights/traveller' ||

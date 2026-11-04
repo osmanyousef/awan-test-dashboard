@@ -358,7 +358,7 @@ function exportExcel() {
             <!-- Main Content -->
             <div class="main">
               <h2 class="title">
-                {{ h.n }}
+                <RouterLink to="/hotels/details" class="text-inherit hover:underline cursor-pointer">{{ h.n }}</RouterLink>
                 <span class="stars">
                   <svg v-for="starIdx in h.s" :key="starIdx" viewBox="0 0 24 24">
                     <path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.9L12 17.8 5.8 21l1.2-6.9-5-4.9 6.9-1z" />
@@ -444,6 +444,9 @@ function exportExcel() {
                 Taxes &amp; fees included
               </div>
               <div class="actions">
+                <RouterLink to="/hotels/details" class="btn ghost">
+                  Details
+                </RouterLink>
                 <button
                   type="button"
                   class="btn primary"
