@@ -7,11 +7,16 @@ import ToastNotification from '../components/ToastNotification.vue'
 const route = useRoute()
 const isFlushPage = computed(() => {
   return (
+    route.path === '/' ||
+    route.path === '/hotels' ||
+    route.path === '/flights' ||
     route.path === '/flights/review' ||
     route.path === '/flights/traveller' ||
     route.path === '/flights/pay' ||
     route.path === '/operations/bookings' ||
-    route.path === '/bookings'
+    route.path === '/bookings' ||
+    route.path === '/finance/wallet' ||
+    route.path === '/wallet'
   )
 })
 </script>

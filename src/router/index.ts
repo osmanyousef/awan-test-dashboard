@@ -18,6 +18,7 @@ const router = createRouter({
     { path: '/dashboard', component: () => import('../pages/DashboardPage.vue') },
 
     // Finance
+    { path: '/wallet', redirect: '/finance/wallet' },
     { path: '/finance/wallet', component: () => import('../pages/WalletPage.vue') },
     { path: '/finance/request-credit', component: () => import('../pages/RequestCreditPage.vue') },
     { path: '/finance/statement', component: () => import('../pages/StatementPage.vue') },
