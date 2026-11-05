@@ -11,6 +11,8 @@ const isFlushPage = computed(() => {
     route.path === '/hotels' ||
     route.path === '/hotels/details' ||
     route.path.startsWith('/hotels/details') ||
+    route.path === '/hotels/guests' ||
+    route.path === '/hotels/pay' ||
     route.path === '/flights' ||
     route.path === '/flights/review' ||
     route.path === '/flights/traveller' ||

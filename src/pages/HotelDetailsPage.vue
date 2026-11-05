@@ -204,13 +204,27 @@ const filteredRooms = computed(() => {
 })
 
 function selectRoom(room: RoomOption) {
-  show(`Selected ${room.title} for all rooms! Total: $${room.totalPrice.toFixed(2)}`)
+  try {
+    sessionStorage.setItem(
+      'awan_selected_room',
+      JSON.stringify({
+        hotel: 'Silka Maytower Kuala Lumpur',
+        room: room.title,
+        price: room.totalPrice,
+        nightly: room.pricePerNight,
+        refundable: room.refundable,
+        breakfast: room.breakfast,
+      })
+    )
+  } catch {}
+  show(`Selected ${room.title}! Proceeding to guest details...`)
+  router.push('/hotels/guests')
 }
 </script>
 
 <template>
   <div class="min-h-screen bg-[#f4f6fa] text-[#101828]">
-    <div class="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8 py-5 pb-16 flex flex-col gap-6">
+    <div class="w-full max-w-[1520px] mx-auto px-4 sm:px-8 lg:px-12 py-5 pb-16 flex flex-col gap-6">
 
       <!-- ── Back Button ──────────────────────────────────────── -->
       <button type="button"
@@ -224,7 +238,7 @@ function selectRoom(room: RoomOption) {
 
       <!-- ── Photo Mosaic Grid (Fixed Aspect-Ratio Containers) ──── -->
       <div
-        class="grid grid-cols-1 sm:grid-cols-4 sm:grid-rows-2 gap-2 h-[300px] sm:h-[430px] rounded-2xl overflow-hidden relative shadow-xs bg-slate-200">
+        class="grid grid-cols-1 sm:grid-cols-4 sm:grid-rows-2 gap-2.5 h-[320px] sm:h-[480px] lg:h-[520px] rounded-2xl overflow-hidden relative shadow-xs bg-slate-200">
         <!-- Big Hero Photo (Spans 2 cols & 2 rows) -->
         <div class="sm:col-span-2 sm:row-span-2 relative group overflow-hidden cursor-pointer bg-slate-300"
           @click="openLightbox(0)">
@@ -306,7 +320,7 @@ function selectRoom(room: RoomOption) {
       </nav>
 
       <!-- ── Two-Column Main Content & Sticky Sidebar ─────────── -->
-      <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-6 items-start">
+      <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_380px] gap-6 sm:gap-8 items-start">
 
         <!-- ── Left Column: Hotel Info Cards ──────────────────── -->
         <div class="bg-white border border-[#e3e8f2] rounded-2xl shadow-xs overflow-hidden divide-y divide-[#eef1f7]">
@@ -844,7 +858,7 @@ function selectRoom(room: RoomOption) {
       <div v-if="isLightboxOpen"
         class="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6"
         role="dialog" aria-modal="true" @click.self="closeLightbox">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-5xl w-full overflow-hidden flex flex-col max-h-[95vh]">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-6xl w-full overflow-hidden flex flex-col max-h-[95vh]">
 
           <!-- Header Bar -->
           <div class="flex items-center justify-between px-5 py-3.5 border-b border-[#e3e8f2] bg-white">
