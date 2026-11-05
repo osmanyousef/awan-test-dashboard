@@ -4,6 +4,8 @@ import { useRouter } from 'vue-router'
 import { useFlightBooking } from '../composables/useFlightBooking'
 import FlightStepHero from '../components/flights/FlightStepHero.vue'
 import BookingSummarySidebar from '../components/flights/BookingSummarySidebar.vue'
+import PassportOcrScanner from '../components/common/PassportOcrScanner.vue'
+import type { ParsedPassport } from '../utils/mrzParser'
 
 const router = useRouter()
 
@@ -122,6 +124,19 @@ function onBlur(field: keyof typeof D.value) {
   touched.value[field] = true
 }
 
+function onPassportScanned(data: ParsedPassport) {
+  if (data.title) D.value.title = data.title
+  if (data.firstName) D.value.first = data.firstName
+  if (data.lastName) D.value.last = data.lastName
+  if (data.dateOfBirth) D.value.dob = data.dateOfBirth
+  if (data.gender) D.value.gender = data.gender === 'Female' ? 'F' : 'M'
+  if (data.nationality) D.value.nat = data.nationality
+  if (data.passportNumber) D.value.pno = data.passportNumber
+  if (data.expiryDate) D.value.exp = data.expiryDate
+  if (data.issuingCountry) D.value.issue = data.issuingCountry
+  touched.value = {}
+}
+
 const isTravellerDone = computed(() => {
   const fields: (keyof typeof D.value)[] = ['title', 'first', 'last', 'dob', 'gender', 'nat', 'pno', 'exp', 'issue']
   return fields.every(f => !getError(f))
@@ -212,6 +227,9 @@ function handleContinue() {
                 Complete
               </span>
             </div>
+
+            <!-- Passport OCR Scanner Component -->
+            <PassportOcrScanner @scan-complete="onPassportScanned" />
 
             <!-- Section: Personal details -->
             <div class="text-xs font-bold uppercase tracking-wider text-[#63708b] mb-3">

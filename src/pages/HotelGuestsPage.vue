@@ -3,6 +3,8 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import HotelStepHero from '../components/hotels/HotelStepHero.vue'
 import HotelBookingSidebar from '../components/hotels/HotelBookingSidebar.vue'
+import PassportOcrScanner from '../components/common/PassportOcrScanner.vue'
+import type { ParsedPassport } from '../utils/mrzParser'
 import { useToast } from '../composables/useToast'
 
 const router = useRouter()
@@ -26,9 +28,9 @@ const countries = [
 // ── Guest Form State ───────────────────────────────────────
 const guest = ref({
   title: 'Mr',
-  firstName: 'IBRAHIM',
-  lastName: 'BADER',
-  dob: '2001-11-20',
+  firstName: '',
+  lastName: '',
+  dob: '',
   gender: 'Male',
   nationality: 'LY',
   email: 'gitize@mailinator.com',
@@ -85,6 +87,18 @@ function toggleRequest(id: string) {
   } else {
     selectedRequests.value.push(id)
   }
+}
+
+// ── Passport OCR Auto-Fill ──────────────────────────────
+function onPassportScanned(data: ParsedPassport) {
+  if (data.title) guest.value.title = data.title
+  if (data.firstName) guest.value.firstName = data.firstName
+  if (data.lastName) guest.value.lastName = data.lastName
+  if (data.dateOfBirth) guest.value.dob = data.dateOfBirth
+  if (data.gender) guest.value.gender = data.gender
+  if (data.nationality) guest.value.nationality = data.nationality
+  touched.value = {}
+  show(`Passport detected: ${data.firstName || ''} ${data.lastName || ''} (${data.nationality || ''})`.trim())
 }
 
 // ── Continue to Review ─────────────────────────────────────
@@ -266,9 +280,12 @@ function handleContinue() {
               </span>
             </div>
 
-            <p class="text-xs text-[#63708b] m-0 mb-5">
+            <p class="text-xs text-[#63708b] m-0 mb-4">
               Enter names exactly as they appear on your official ID or passport.
             </p>
+
+            <!-- Passport OCR Scanner Component -->
+            <PassportOcrScanner @scan-complete="onPassportScanned" />
 
             <div class="grid grid-cols-1 sm:grid-cols-12 gap-3.5 mb-5">
               <!-- Title -->

@@ -482,12 +482,13 @@ function closeAllDropdowns() {
     </div>
 
     <!-- Main Content Canvas -->
-    <div class="relative z-10 max-w-[1280px] mx-auto px-6 sm:px-8 pt-8 sm:pt-10">
+    <div class="relative z-10 max-w-[1400px] mx-auto px-6 sm:px-8 pt-8 sm:pt-10">
       <!-- Simple Clean Hero Title -->
       <div class="mb-6">
-        <h1 class="text-2xl sm:text-[32px] font-bold text-[#111827] tracking-tight m-0">
+        <h1 class="text-2xl sm:text-[30px] font-bold text-[#111827] tracking-tight m-0">
           Where do you want to travel?
         </h1>
+        <p class="text-xs sm:text-sm text-[#64748b] mt-1 m-0">Instant B2B inventory for flights and guaranteed hotel rates</p>
       </div>
 
       <!-- ── Search Box Main Card ─────────────────────────────── -->
@@ -1199,10 +1200,6 @@ function closeAllDropdowns() {
       </div>
     </div>
 
-      <!-- ── Manage Bookings Teaser ──────────────────────────── -->
-      <div class="bookings-teaser">
-        <h2 class="teaser-title">Manage your bookings</h2>
-      </div>
     </div>
   </div>
 </template>

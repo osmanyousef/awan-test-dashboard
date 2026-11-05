@@ -1,45 +1,29 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { RouterLink, useRoute } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { dashboardStats, currentUser } from '../config/mockData'
 
 const route = useRoute()
-const activeDropdown = ref<string | null>(null)
+const router = useRouter()
+
+const accountMenuOpen = ref(false)
+const pnrQuery = ref('')
+const selectedAgencyType = ref('SubAgency')
+const selectedAgencyName = ref('Tripoli Central')
+
 const isFlightBookingPage = computed(() =>
   ['/flights/review', '/flights/traveller', '/flights/pay'].includes(route.path)
 )
-const accountMenuOpen = ref(false)
-let closeTimeout: ReturnType<typeof setTimeout> | null = null
 
-function openDropdown(name: string) {
-  if (closeTimeout) {
-    clearTimeout(closeTimeout)
-    closeTimeout = null
+function handleRetrievePNR() {
+  if (pnrQuery.value.trim()) {
+    router.push({
+      path: '/operations/bookings',
+      query: { search: pnrQuery.value.trim() },
+    })
+  } else {
+    router.push('/operations/bookings')
   }
-  activeDropdown.value = name
-}
-
-function scheduleCloseDropdown() {
-  if (closeTimeout) clearTimeout(closeTimeout)
-  closeTimeout = setTimeout(() => {
-    activeDropdown.value = null
-  }, 220)
-}
-
-function toggleDropdown(name: string) {
-  if (closeTimeout) {
-    clearTimeout(closeTimeout)
-    closeTimeout = null
-  }
-  activeDropdown.value = activeDropdown.value === name ? null : name
-}
-
-function closeDropdownNow() {
-  if (closeTimeout) {
-    clearTimeout(closeTimeout)
-    closeTimeout = null
-  }
-  activeDropdown.value = null
 }
 
 function toggleAccount() {
@@ -48,22 +32,13 @@ function toggleAccount() {
 
 function onDocumentClick(e: MouseEvent) {
   const target = e.target as HTMLElement | null
-  if (!target?.closest('.nav-dropdown-wrap')) {
-    activeDropdown.value = null
-  }
   if (!target?.closest('.account-menu-wrap')) {
     accountMenuOpen.value = false
   }
 }
 
-onMounted(() => {
-  document.addEventListener('click', onDocumentClick)
-})
-
-onUnmounted(() => {
-  document.removeEventListener('click', onDocumentClick)
-  if (closeTimeout) clearTimeout(closeTimeout)
-})
+onMounted(() => document.addEventListener('click', onDocumentClick))
+onUnmounted(() => document.removeEventListener('click', onDocumentClick))
 
 function formatCurrency(n: number) {
   return new Intl.NumberFormat('en-US', {
@@ -72,513 +47,446 @@ function formatCurrency(n: number) {
     maximumFractionDigits: 2,
   }).format(n)
 }
+
+// Navigation Tabs in Blue Bar (aligned with reference screenshot: Dashboard, Flight, Hotel, Bookings, etc.)
+const navTabs = [
+  { label: 'Flight',       to: '/flights' },
+  { label: 'Hotel',        to: '/hotels' },
+  { label: 'Bookings',     to: '/operations/bookings' },
+  { label: 'Wallet',       to: '/finance/wallet' },
+  { label: 'Reports',      to: '/finance/statement' },
+  { label: 'Sub-Agencies', to: '/agency/sub-agencies' },
+  { label: 'Settings',     to: '/agency/settings' },
+]
+
+function isTabActive(tab: { label: string; to: string }) {
+  if (tab.to === '/hotels') {
+    return route.path === '/hotels' || route.path === '/' || route.path.startsWith('/hotels/')
+  }
+  if (tab.to === '/flights') {
+    return route.path === '/flights' || route.path.startsWith('/flights/')
+  }
+  return route.path === tab.to || route.path.startsWith(tab.to)
+}
 </script>
 
 <template>
-  <header class="header" :class="{ 'header--dark': isFlightBookingPage }">
-    <div class="header-container">
-      <!-- Left: Official Awan Travel Logo -->
-      <RouterLink to="/" class="brand">
-        <img
-          src="/awan-logo.png"
-          alt="Awan Travel"
-          class="brand-logo"
-        />
-      </RouterLink>
+  <header class="b2b-header" :class="{ 'b2b-header--dark': isFlightBookingPage }">
 
-      <!-- Center: Clean Top Navigation (Bedsonline / Modern OTA style) -->
-      <nav class="nav-links">
-        <!-- Main Search (Stays & Flights) - Primary Landing -->
-        <RouterLink
-          to="/"
-          class="nav-link"
-          :class="{ 'nav-link--active': route.path === '/' || route.path === '/hotels' || route.path === '/flights' }"
-        >
-          Book / Search
+    <!-- ══ ROW 1: B2B UTILITY BAR (Logo, PNR Search, SubAgency selector, Balance, User) ══ -->
+    <div class="top-bar">
+      <div class="top-bar-container">
+
+        <!-- Left: Official Awan Travel Logo -->
+        <RouterLink to="/" class="brand-link" title="Awan Travel B2B Portal">
+          <img src="/awan-logo.png" alt="Awan Travel" class="brand-img" />
         </RouterLink>
 
-        <!-- Dashboard -->
-        <RouterLink
-          to="/dashboard"
-          class="nav-link"
-          :class="{ 'nav-link--active': route.path === '/dashboard' }"
-        >
-          Dashboard
-        </RouterLink>
+        <!-- Center & Right: B2B Operational Utilities -->
+        <div class="utility-controls">
 
-        <!-- Operations Dropdown (Bookings, Amendment Requests) -->
-        <div
-          class="nav-dropdown-wrap"
-          @mouseenter="openDropdown('operations')"
-          @mouseleave="scheduleCloseDropdown"
-        >
-          <button
-            class="nav-link nav-link--btn"
-            :class="{ 'nav-link--active': route.path.startsWith('/operations') || activeDropdown === 'operations' }"
-            @click.stop="toggleDropdown('operations')"
-          >
-            <span>Operations</span>
-            <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor" class="dropdown-chevron" :class="{ 'dropdown-chevron--open': activeDropdown === 'operations' }">
-              <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-            </svg>
-          </button>
-
-          <div
-            v-if="activeDropdown === 'operations'"
-            class="dropdown-menu"
-            @mouseenter="openDropdown('operations')"
-            @mouseleave="scheduleCloseDropdown"
-          >
-            <RouterLink to="/operations/bookings" class="dropdown-item" @click="closeDropdownNow">
-              <span class="dropdown-icon">📅</span>
-              <span>Bookings</span>
-            </RouterLink>
-            <RouterLink to="/operations/amendments" class="dropdown-item" @click="closeDropdownNow">
-              <span class="dropdown-icon">✏️</span>
-              <span>Amendment Requests</span>
-            </RouterLink>
-          </div>
-        </div>
-
-        <!-- Finance Dropdown (Wallet, Request Credit, Account Statement) -->
-        <div
-          class="nav-dropdown-wrap"
-          @mouseenter="openDropdown('finance')"
-          @mouseleave="scheduleCloseDropdown"
-        >
-          <button
-            class="nav-link nav-link--btn"
-            :class="{ 'nav-link--active': route.path.startsWith('/finance') || activeDropdown === 'finance' }"
-            @click.stop="toggleDropdown('finance')"
-          >
-            <span>Finance</span>
-            <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor" class="dropdown-chevron" :class="{ 'dropdown-chevron--open': activeDropdown === 'finance' }">
-              <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-            </svg>
-          </button>
-
-          <div
-            v-if="activeDropdown === 'finance'"
-            class="dropdown-menu"
-            @mouseenter="openDropdown('finance')"
-            @mouseleave="scheduleCloseDropdown"
-          >
-            <RouterLink to="/finance/wallet" class="dropdown-item" @click="closeDropdownNow">
-              <span class="dropdown-icon">💳</span>
-              <span>Wallet</span>
-            </RouterLink>
-            <RouterLink to="/finance/request-credit" class="dropdown-item" @click="closeDropdownNow">
-              <span class="dropdown-icon">➕</span>
-              <span>Request Credit</span>
-            </RouterLink>
-            <RouterLink to="/finance/statement" class="dropdown-item" @click="closeDropdownNow">
-              <span class="dropdown-icon">📄</span>
-              <span>Account Statement</span>
-            </RouterLink>
-          </div>
-        </div>
-
-        <!-- Agencies Dropdown (Markup Rules, Sub-Agencies, Users, Settings) -->
-        <div
-          class="nav-dropdown-wrap"
-          @mouseenter="openDropdown('agencies')"
-          @mouseleave="scheduleCloseDropdown"
-        >
-          <button
-            class="nav-link nav-link--btn"
-            :class="{ 'nav-link--active': route.path.startsWith('/agency') || activeDropdown === 'agencies' }"
-            @click.stop="toggleDropdown('agencies')"
-          >
-            <span>Agencies</span>
-            <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor" class="dropdown-chevron" :class="{ 'dropdown-chevron--open': activeDropdown === 'agencies' }">
-              <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-            </svg>
-          </button>
-
-          <div
-            v-if="activeDropdown === 'agencies'"
-            class="dropdown-menu"
-            @mouseenter="openDropdown('agencies')"
-            @mouseleave="scheduleCloseDropdown"
-          >
-            <RouterLink to="/agency/markup" class="dropdown-item" @click="closeDropdownNow">
-              <span class="dropdown-icon">%</span>
-              <span>Markup Rules</span>
-            </RouterLink>
-            <RouterLink to="/agency/sub-agencies" class="dropdown-item" @click="closeDropdownNow">
-              <span class="dropdown-icon">🏢</span>
-              <span>Sub-Agencies</span>
-            </RouterLink>
-            <RouterLink to="/agency/users" class="dropdown-item" @click="closeDropdownNow">
-              <span class="dropdown-icon">👥</span>
-              <span>Users</span>
-            </RouterLink>
-            <RouterLink to="/agency/settings" class="dropdown-item" @click="closeDropdownNow">
-              <span class="dropdown-icon">⚙️</span>
-              <span>Agency Settings</span>
-            </RouterLink>
-          </div>
-        </div>
-      </nav>
-
-      <!-- Right: Wallet chip, Notifications, Account profile -->
-      <div class="header-right">
-        <!-- Spendable Wallet Chip (LYD) -->
-        <RouterLink to="/finance/wallet" class="wallet-chip">
-          <div class="wallet-icon-box">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21 12V7H5a2 2 0 010-4h14v4" />
-              <path d="M3 7v13a2 2 0 002 2h16v-5" />
-              <path d="M18 12a2 2 0 100 4 2 2 0 000-4z" />
-            </svg>
-          </div>
-          <div class="wallet-details">
-            <span class="wallet-label">Balance</span>
-            <span class="wallet-amount">LYD {{ formatCurrency(dashboardStats.walletBalance) }}</span>
-          </div>
-        </RouterLink>
-
-        <!-- Notification bell with badge -->
-        <button class="action-icon-btn" title="Notifications">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-            <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0" />
-          </svg>
-          <span class="bell-badge">3</span>
-        </button>
-
-        <!-- My Account Dropdown -->
-        <div class="account-menu-wrap" style="position: relative">
-          <button
-            class="user-profile-btn"
-            title="My Account"
-            @click.stop="toggleAccount"
-          >
-            <div class="user-avatar-sm">
-              {{ currentUser.avatar }}
-            </div>
-            <span class="user-name-text">{{ currentUser.name }}</span>
-            <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor">
-              <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-            </svg>
-          </button>
-
-          <div v-if="accountMenuOpen" class="dropdown-menu account-dropdown">
-            <div class="account-dropdown-header">
-              <span class="acc-email">{{ currentUser.email }}</span>
-              <span class="acc-role">{{ currentUser.role }}</span>
-            </div>
-            <div class="dropdown-divider"></div>
-            <RouterLink to="/account" class="dropdown-item" @click="accountMenuOpen = false">
-              👤 Profile & Account
-            </RouterLink>
-            <RouterLink to="/agency/settings" class="dropdown-item" @click="accountMenuOpen = false">
-              ⚙️ Settings
-            </RouterLink>
-            <div class="dropdown-divider"></div>
-            <button class="dropdown-item dropdown-item--danger" @click="accountMenuOpen = false">
-              ↩ Sign out
+          <!-- 1. Retrieve PNR Search Bar -->
+          <form @submit.prevent="handleRetrievePNR" class="pnr-box">
+            <input
+              type="text"
+              v-model="pnrQuery"
+              placeholder="Retrieve PNR"
+              class="pnr-input"
+            />
+            <button type="submit" class="pnr-btn-search" title="Search PNR">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
             </button>
+            <button
+              type="button"
+              class="pnr-btn-add"
+              title="New Booking / Search"
+              @click="router.push('/hotels')"
+            >
+              +
+            </button>
+          </form>
+
+          <!-- 2. Type / SubAgency Selectors (B2B System Style) -->
+          <div class="subagency-group">
+            <div class="subagency-field">
+              <span class="field-tag">Type</span>
+              <div class="select-wrapper">
+                <select v-model="selectedAgencyType" class="b2b-select">
+                  <option value="SubAgency">SubAgency</option>
+                  <option value="MainAgency">Main Agency</option>
+                  <option value="Corporate">Corporate</option>
+                </select>
+                <svg width="10" height="10" viewBox="0 0 20 20" fill="currentColor" class="select-chevron">
+                  <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                </svg>
+              </div>
+            </div>
+
+            <div class="subagency-field">
+              <span class="field-tag">Name</span>
+              <div class="select-wrapper">
+                <select v-model="selectedAgencyName" class="b2b-select b2b-select--name">
+                  <option value="Tripoli Central">Tripoli Central</option>
+                  <option value="Benghazi Branch">Benghazi Branch</option>
+                  <option value="Misrata Desk">Misrata Desk</option>
+                </select>
+                <svg width="10" height="10" viewBox="0 0 20 20" fill="currentColor" class="select-chevron">
+                  <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                </svg>
+              </div>
+            </div>
           </div>
+
+          <!-- 3. Balance Box (Styled precisely as in reference) -->
+          <RouterLink to="/finance/wallet" class="balance-box" title="View Agency Wallet & Statement">
+            <span class="balance-title">Balance</span>
+            <span class="balance-number">{{ formatCurrency(dashboardStats.walletBalance) }} LYD</span>
+          </RouterLink>
+
+          <!-- 4. Language Selector -->
+          <button class="lang-switch-btn" title="Toggle Language">
+            <span class="lang-icon">🌐</span>
+            <span class="lang-text">العربية</span>
+          </button>
+
+          <!-- 5. Notifications Bell -->
+          <button class="bell-btn" title="Notifications" @click="router.push('/operations/bookings')">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0" />
+            </svg>
+            <span class="bell-indicator">3</span>
+          </button>
+
+          <!-- 6. User Profile Dropdown -->
+          <div class="account-menu-wrap">
+            <button class="account-btn" @click.stop="toggleAccount" title="User Profile">
+              <div class="user-avatar">{{ currentUser.avatar }}</div>
+              <span class="user-handle">{{ currentUser.name }}</span>
+              <svg width="11" height="11" viewBox="0 0 20 20" fill="currentColor" class="user-chevron">
+                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+              </svg>
+            </button>
+
+            <!-- Dropdown Menu -->
+            <div v-if="accountMenuOpen" class="account-popover">
+              <div class="popover-header">
+                <span class="popover-name">{{ currentUser.name }}</span>
+                <span class="popover-email">{{ currentUser.email }}</span>
+                <span class="popover-role">{{ currentUser.role }} · {{ currentUser.agency }}</span>
+              </div>
+              <div class="popover-divider"></div>
+              <RouterLink to="/account" class="popover-link" @click="accountMenuOpen = false">
+                <span>👤</span>
+                <span>Profile &amp; Account</span>
+              </RouterLink>
+              <RouterLink to="/agency/settings" class="popover-link" @click="accountMenuOpen = false">
+                <span>⚙️</span>
+                <span>Agency Settings</span>
+              </RouterLink>
+              <RouterLink to="/finance/wallet" class="popover-link" @click="accountMenuOpen = false">
+                <span>💳</span>
+                <span>Wallet &amp; Credit Line</span>
+              </RouterLink>
+              <div class="popover-divider"></div>
+              <button class="popover-link popover-link--logout" @click="accountMenuOpen = false">
+                <span>↩</span>
+                <span>Sign out</span>
+              </button>
+            </div>
+          </div>
+
         </div>
       </div>
     </div>
+
+    <!-- ══ ROW 2: B2B BLUE NAVIGATION BAR (Matching screenshot exactly) ══ -->
+    <nav class="blue-nav-bar">
+      <div class="blue-nav-container">
+
+        <!-- Dashboard Speedometer Icon (First item on left) -->
+        <RouterLink
+          to="/dashboard"
+          class="dash-icon-tab"
+          :class="{ 'dash-icon-tab--active': route.path === '/dashboard' }"
+          title="Operations Dashboard"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 14l3-3" />
+            <path d="M3.34 19a10 10 0 1 1 17.32 0" />
+          </svg>
+        </RouterLink>
+
+        <!-- Navigation Tabs -->
+        <div class="nav-tabs-list">
+          <RouterLink
+            v-for="tab in navTabs"
+            :key="tab.label"
+            :to="tab.to"
+            class="b2b-tab-link"
+            :class="{ 'b2b-tab-link--active': isTabActive(tab) }"
+          >
+            {{ tab.label }}
+          </RouterLink>
+        </div>
+
+      </div>
+    </nav>
+
   </header>
 </template>
 
 <style scoped>
-.header {
-  background: var(--color-bg);
-  padding: 16px 24px;
+/* ── Main Header Shell ── */
+.b2b-header {
   position: sticky;
   top: 0;
   z-index: 50;
-  border-bottom: 1px solid rgba(204, 216, 230, 0.7);
+  background: #ffffff;
+  border-bottom: 1px solid #dce4f0;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
 }
 
-.header--dark {
-  background: #0c1f44;
-  border-bottom-color: rgba(255, 255, 255, 0.08);
+/* ── Top Utility Row ── */
+.top-bar {
+  background: #ffffff;
+  border-bottom: 1px solid #e8eef6;
+  padding: 8px 24px;
 }
-
-.header--dark .nav-link {
-  color: #c9d7f3;
-}
-
-.header--dark .nav-link:hover {
-  color: #fff;
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.header--dark .nav-link--active {
-  border-color: rgba(255, 255, 255, 0.3);
-  color: #fff;
-  background: rgba(255, 255, 255, 0.12);
-}
-
-.header--dark .wallet-chip {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(16, 185, 129, 0.5);
-}
-
-.header--dark .wallet-chip:hover {
-  background: rgba(255, 255, 255, 0.16);
-}
-
-.header--dark .wallet-label {
-  color: #86efac;
-}
-
-.header--dark .wallet-amount {
-  color: #d1fae5;
-}
-
-.header--dark .action-icon-btn {
-  color: #c9d7f3;
-}
-
-.header--dark .action-icon-btn:hover {
-  color: #fff;
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.header--dark .user-name-text {
-  color: #c9d7f3;
-}
-
-.header--dark .user-profile-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.header-container {
+.top-bar-container {
   max-width: 1560px;
   margin: 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 24px;
+  gap: 16px;
+  min-height: 46px;
 }
 
 /* Brand Logo */
-.brand {
+.brand-link {
   display: flex;
   align-items: center;
   text-decoration: none;
+  flex-shrink: 0;
 }
-.brand-logo {
-  height: 40px;
+.brand-img {
+  height: 38px;
   width: auto;
   object-fit: contain;
 }
 
-/* Center Nav Links */
-.nav-links {
+/* Utility Controls */
+.utility-controls {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
+  flex-wrap: nowrap;
 }
 
-.nav-link {
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: var(--color-text);
-  text-decoration: none;
-  padding: 8px 16px;
-  border-radius: 9999px;
-  transition: all 0.15s ease;
+/* 1. Retrieve PNR Search */
+.pnr-box {
+  display: flex;
+  align-items: stretch;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #ffffff;
+  height: 34px;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+.pnr-input {
+  border: none;
+  padding: 0 10px;
+  font-size: 13px;
+  font-family: inherit;
+  width: 130px;
+  color: #1e293b;
+  outline: none;
+  background: transparent;
+}
+.pnr-input::placeholder {
+  color: #94a3b8;
+  font-size: 12px;
+}
+.pnr-btn-search {
+  background: #1e293b;
+  border: none;
+  color: #ffffff;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.pnr-btn-search:hover {
+  background: #0f172a;
+}
+.pnr-btn-add {
+  background: #f8fafc;
+  border: none;
+  border-left: 1px solid #cbd5e1;
+  color: #334155;
+  font-size: 16px;
+  font-weight: 600;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.pnr-btn-add:hover {
+  background: #e2e8f0;
+}
+
+/* 2. SubAgency Selectors */
+.subagency-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.subagency-field {
   display: flex;
   align-items: center;
   gap: 6px;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  font-family: inherit;
+  font-size: 12px;
+  color: #64748b;
 }
-
-.nav-link:hover {
-  color: var(--color-primary);
-  background: rgba(87, 130, 206, 0.08);
-}
-
-.nav-link--active {
-  border: 1.5px solid var(--color-primary);
-  color: var(--color-primary);
-  background: rgba(87, 130, 206, 0.1);
+.field-tag {
+  font-size: 11px;
   font-weight: 600;
+  color: #64748b;
+  text-transform: capitalize;
 }
-
-.dropdown-chevron {
-  opacity: 0.6;
-  transition: transform 0.2s ease;
-}
-
-.dropdown-chevron--open {
-  transform: rotate(180deg);
-  opacity: 1;
-}
-
-/* Dropdown Menu */
-.nav-dropdown-wrap {
+.select-wrapper {
   position: relative;
-}
-
-.dropdown-menu {
-  position: absolute;
-  top: 100%;
-  margin-top: 6px;
-  left: 0;
-  background: #ffffff;
-  border: 1px solid var(--color-border);
-  border-radius: 12px;
-  box-shadow: 0 12px 30px rgba(31, 43, 56, 0.12);
-  min-width: 200px;
-  padding: 6px 0;
-  z-index: 60;
-  overflow: visible;
-}
-
-/* Invisible hover bridge to eliminate gap flicker */
-.dropdown-menu::before {
-  content: '';
-  position: absolute;
-  top: -12px;
-  left: 0;
-  right: 0;
-  height: 12px;
-  background: transparent;
-}
-
-.dropdown-item {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 16px;
-  font-size: 0.88rem;
-  color: var(--color-text);
-  text-decoration: none;
-  cursor: pointer;
-  transition: background 0.1s ease;
-  background: none;
-  border: none;
-  width: 100%;
-  text-align: left;
+}
+.b2b-select {
+  appearance: none;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  height: 32px;
+  padding: 0 24px 0 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #1e293b;
   font-family: inherit;
+  cursor: pointer;
+  outline: none;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+.b2b-select--name {
+  min-width: 120px;
+}
+.select-chevron {
+  position: absolute;
+  right: 8px;
+  pointer-events: none;
+  color: #64748b;
 }
 
-.dropdown-item:hover {
-  background: var(--color-primary-light);
-  color: var(--color-primary);
-}
-
-.dropdown-item--danger {
-  color: var(--color-danger);
-}
-.dropdown-item--danger:hover {
-  background: #fee2e2;
-  color: var(--color-danger);
-}
-
-.dropdown-icon {
-  font-size: 1rem;
-}
-
-.dropdown-divider {
-  height: 1px;
-  background: var(--color-border);
-  margin: 4px 0;
-}
-
-/* Right Header Actions */
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
-/* Spendable Wallet Chip */
-.wallet-chip {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 6px 14px 6px 8px;
-  border-radius: 9999px;
-  background: #ffffff;
-  border: 1.5px solid #10b981;
-  text-decoration: none;
-  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.12);
-  transition: all 0.15s ease;
-}
-
-.wallet-chip:hover {
-  background: #f0fdf4;
-  transform: translateY(-1px);
-}
-
-.wallet-icon-box {
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  background: #10b981;
-  color: #ffffff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.wallet-details {
+/* 3. Balance Box */
+.balance-box {
   display: flex;
   flex-direction: column;
+  justify-content: center;
+  align-items: flex-end;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 3px 12px;
+  height: 34px;
+  background: #ffffff;
+  text-decoration: none;
+  min-width: 120px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+  transition: all 0.15s ease;
 }
-.wallet-label {
-  font-size: 0.65rem;
-  color: #166534;
+.balance-box:hover {
+  border-color: #059669;
+  background: #f0fdf4;
+}
+.balance-title {
+  font-size: 10px;
   font-weight: 600;
+  color: #64748b;
   line-height: 1;
 }
-.wallet-amount {
-  font-size: 0.85rem;
-  font-weight: 800;
-  color: #14532d;
+.balance-number {
+  font-size: 13px;
+  font-weight: 700;
+  color: #047857;
   line-height: 1.2;
 }
 
-/* Notification Bell */
-.action-icon-btn {
+/* 4. Language Selector */
+.lang-switch-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  height: 34px;
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.lang-switch-btn:hover {
+  background: #e2e8f0;
+}
+.lang-icon {
+  font-size: 13px;
+}
+
+/* 5. Bell Button */
+.bell-btn {
+  position: relative;
   background: none;
   border: none;
   cursor: pointer;
-  color: var(--color-text);
-  padding: 8px;
-  border-radius: 50%;
+  color: #64748b;
+  padding: 6px;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
-  position: relative;
   transition: color 0.15s, background 0.15s;
 }
-
-.action-icon-btn:hover {
-  color: var(--color-primary);
-  background: rgba(87, 130, 206, 0.1);
+.bell-btn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
 }
-
-.bell-badge {
+.bell-indicator {
   position: absolute;
-  top: 2px;
-  right: 2px;
-  background: var(--color-primary);
+  top: 3px;
+  right: 3px;
+  background: #ef4444;
   color: #ffffff;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 700;
-  width: 16px;
-  height: 16px;
+  width: 15px;
+  height: 15px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-/* User Profile button */
-.user-profile-btn {
+/* 6. Account Menu */
+.account-menu-wrap {
+  position: relative;
+}
+.account-btn {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -586,59 +494,230 @@ function formatCurrency(n: number) {
   border: none;
   cursor: pointer;
   padding: 4px 8px;
-  border-radius: 9999px;
-  transition: background 0.15s ease;
+  border-radius: 6px;
+  transition: background 0.15s;
 }
-
-.user-profile-btn:hover {
-  background: rgba(87, 130, 206, 0.08);
+.account-btn:hover {
+  background: #f1f5f9;
 }
-
-.user-avatar-sm {
-  width: 32px;
-  height: 32px;
+.user-avatar {
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
-  background: var(--color-primary);
+  background: #2563eb;
   color: #ffffff;
   font-weight: 700;
-  font-size: 0.85rem;
+  font-size: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
-
-.user-name-text {
-  font-size: 0.85rem;
+.user-handle {
+  font-size: 12.5px;
   font-weight: 600;
-  color: var(--color-text);
+  color: #1e293b;
+}
+.user-chevron {
+  color: #64748b;
 }
 
-/* Account dropdown */
-.account-dropdown {
+/* Account Popover */
+.account-popover {
+  position: absolute;
+  top: calc(100% + 8px);
   right: 0;
-  left: auto;
-  min-width: 220px;
+  min-width: 230px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  padding: 6px 0;
+  z-index: 100;
 }
-.account-dropdown-header {
+.popover-header {
   padding: 10px 16px 8px;
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
-.acc-email {
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: var(--color-text);
+.popover-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
 }
-.acc-role {
-  font-size: 0.7rem;
-  color: var(--color-text-muted);
+.popover-email {
+  font-size: 11.5px;
+  color: #64748b;
+}
+.popover-role {
+  font-size: 10.5px;
+  color: #2563eb;
   font-weight: 600;
+  margin-top: 2px;
+}
+.popover-divider {
+  height: 1px;
+  background: #e2e8f0;
+  margin: 4px 0;
+}
+.popover-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  font-size: 13px;
+  color: #334155;
+  text-decoration: none;
+  cursor: pointer;
+  background: none;
+  border: none;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+  transition: background 0.1s;
+}
+.popover-link:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+.popover-link--logout {
+  color: #dc2626;
+}
+.popover-link--logout:hover {
+  background: #fee2e2;
+  color: #dc2626;
 }
 
-@media (max-width: 900px) {
-  .nav-links {
-    display: none;
-  }
+/* ── ROW 2: B2B BLUE NAVIGATION BAR (Matching screenshot) ── */
+.blue-nav-bar {
+  background: #2b5ec4;
+  padding: 0 24px;
+}
+.blue-nav-container {
+  max-width: 1560px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Dashboard Speedometer Icon */
+.dash-icon-tab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 38px;
+  color: #ffffff;
+  border-radius: 6px 6px 0 0;
+  background: rgba(255, 255, 255, 0.15);
+  transition: background 0.15s;
+  text-decoration: none;
+  margin-right: 6px;
+}
+.dash-icon-tab:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+.dash-icon-tab--active {
+  background: #1d4596;
+}
+
+/* Tabs list */
+.nav-tabs-list {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.nav-tabs-list::-webkit-scrollbar {
+  display: none;
+}
+.b2b-tab-link {
+  padding: 0 16px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #ffffff;
+  text-decoration: none;
+  white-space: nowrap;
+  border-radius: 6px 6px 0 0;
+  transition: all 0.15s ease;
+  opacity: 0.88;
+}
+.b2b-tab-link:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.14);
+}
+.b2b-tab-link--active {
+  opacity: 1;
+  background: #1d4596;
+  font-weight: 700;
+  box-shadow: inset 0 -2px 0 #ffffff;
+}
+
+/* ── Flight booking dark mode overrides ── */
+.b2b-header--dark {
+  background: #0c1f44;
+  border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+.b2b-header--dark .top-bar {
+  background: #0c1f44;
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+.b2b-header--dark .pnr-box {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+.b2b-header--dark .pnr-input {
+  color: #ffffff;
+}
+.b2b-header--dark .pnr-btn-add {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+.b2b-header--dark .field-tag {
+  color: #94a3b8;
+}
+.b2b-header--dark .b2b-select {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
+.b2b-header--dark .balance-box {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(16, 185, 129, 0.4);
+}
+.b2b-header--dark .balance-title {
+  color: #86efac;
+}
+.b2b-header--dark .balance-number {
+  color: #d1fae5;
+}
+.b2b-header--dark .lang-switch-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
+.b2b-header--dark .bell-btn {
+  color: #cbd5e1;
+}
+.b2b-header--dark .user-handle {
+  color: #ffffff;
+}
+.b2b-header--dark .blue-nav-bar {
+  background: #091733;
+}
+
+@media (max-width: 1024px) {
+  .subagency-group { display: none; }
+  .pnr-box { display: none; }
+}
+@media (max-width: 768px) {
+  .lang-switch-btn { display: none; }
+  .user-handle { display: none; }
 }
 </style>

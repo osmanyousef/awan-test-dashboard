@@ -116,6 +116,7 @@ export const currentUser = {
   email: 'yousefreg2003@gmail.com',
   role: 'TENANT_ADMIN',
   avatar: 'Y',
+  agency: 'Awan Global Travel',
 }
 
 export const dashboardStats = {
