@@ -1,18 +1,14 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { hotelDestinations, airports } from '../config/mockData'
 
 const route = useRoute()
 const router = useRouter()
 
-// ── Tabs ───────────────────────────────────────────────────
-const tabs = ['Stays', 'Flights']
-const activeTab = ref(route.path === '/flights' ? 'Flights' : 'Stays')
-
-watch(() => route.path, (p) => {
-  if (p === '/flights') activeTab.value = 'Flights'
-  else if (p === '/hotels') activeTab.value = 'Stays'
+// ── Active Product (Driven exclusively by top bar navigation) ───────────────
+const activeTab = computed<'Flights' | 'Stays'>(() => {
+  return route.path.startsWith('/flights') ? 'Flights' : 'Stays'
 })
 
 // ── Flights State ──────────────────────────────────────────
@@ -435,34 +431,15 @@ function closeAllDropdowns() {
       <!-- Simple Clean Hero Title -->
       <div class="mb-6">
         <h1 class="text-2xl sm:text-[30px] font-bold text-[#111827] tracking-tight m-0">
-          Where do you want to travel?
+          {{ activeTab === 'Flights' ? 'Search Flights' : 'Search Hotels & Stays' }}
         </h1>
-        <p class="text-xs sm:text-sm text-[#64748b] mt-1 m-0">Instant B2B inventory for flights and guaranteed hotel rates</p>
+        <p class="text-xs sm:text-sm text-[#64748b] mt-1 m-0">
+          {{ activeTab === 'Flights' ? 'Instant B2B inventory and real-time airline fares worldwide' : 'Guaranteed B2B rates and instant room confirmation worldwide' }}
+        </p>
       </div>
 
       <!-- ── Search Box Main Card ─────────────────────────────── -->
       <div class="search-card" @click.stop>
-
-      <!-- 1. Tabs at top of search card (Awan Theme) -->
-      <div class="tabs-row">
-        <button
-          v-for="t in tabs"
-          :key="t"
-          class="tab-pill"
-          :class="{ 'tab-pill--active': activeTab === t }"
-          @click="activeTab = t"
-        >
-          <!-- Bed icon for stays tab -->
-          <svg v-if="t === 'Stays'" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" class="tab-icon">
-            <path d="M7 13c1.66 0 3-1.34 3-3S8.66 7 7 7s-3 1.34-3 3 1.34 3 3 3zm12-6h-8v7H3V5H1v15h2v-3h18v3h2v-9c0-2.21-1.79-4-4-4z" />
-          </svg>
-          <!-- Plane icon for flights tab -->
-          <svg v-else-if="t === 'Flights'" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="tab-icon">
-            <path d="M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3.5c-.5-.5-2.5 0-4 1.5L13.5 8.5 5.3 6.7c-.8-.2-1.6.1-2.1.7l-.7.7 6.4 3.8-3.6 3.6-2.5-.5c-.5-.1-1 .1-1.3.4l-.4.4 2.8 2.8 2.8 2.8.4-.4c.3-.3.5-.8.4-1.3l-.5-2.5 3.6-3.6 3.8 6.4.7-.7c.6-.5.9-1.3.7-2.1z" />
-          </svg>
-          <span>{{ t }}</span>
-        </button>
-      </div>
 
       <!-- ── FLIGHTS SEARCH BAR ── -->
       <div v-if="activeTab === 'Flights'" class="flight-search-wrapper">
@@ -1170,44 +1147,6 @@ function closeAllDropdowns() {
   box-shadow: 0 4px 25px -2px rgba(31, 43, 56, 0.08);
   border: 1px solid rgba(204, 216, 230, 0.6);
   margin-bottom: 40px;
-}
-
-/* ── Product Tabs ───────────────────────────────────────── */
-.tabs-row {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin-bottom: 24px;
-}
-
-.tab-pill {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 20px;
-  border-radius: 9999px;
-  border: none;
-  background: transparent;
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: var(--color-text);
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.tab-pill:hover:not(.tab-pill--active) {
-  color: var(--color-primary);
-  background: rgba(87, 130, 206, 0.06);
-}
-
-.tab-pill--active {
-  background: var(--color-primary);
-  color: #ffffff;
-  box-shadow: 0 2px 8px rgba(87, 130, 206, 0.3);
-}
-
-.tab-icon {
-  margin-left: -2px;
 }
 
 /* ── Trip Type Switcher (Radio Buttons) ─────────────────── */
