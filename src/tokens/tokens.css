@@ -95,7 +95,7 @@
   --header-total-height: calc(var(--header-topbar-height) + var(--header-nav-height));
 
   /* Container */
-  --container-max-width: 1200px;
+  --container-max-width: 1520px;
   --container-padding: var(--space-6);
 
   /* Z-index */

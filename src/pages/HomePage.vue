@@ -427,7 +427,7 @@ function closeAllDropdowns() {
 <template>
   <div class="relative w-full min-h-[calc(100vh-80px)] bg-transparent pb-16" @click="closeAllDropdowns">
     <!-- Main Content Canvas -->
-    <div class="relative z-10 max-w-[1400px] mx-auto px-6 sm:px-8 pt-8 sm:pt-10">
+    <div class="relative z-10 w-full max-w-[1520px] mx-auto px-4 sm:px-8 lg:px-12 pt-8 sm:pt-10">
       <!-- Simple Clean Hero Title -->
       <div class="mb-6">
         <h1 class="text-2xl sm:text-[30px] font-bold text-[#111827] tracking-tight m-0">
@@ -2312,6 +2312,10 @@ function closeAllDropdowns() {
 }
 
 @media (max-width: 900px) {
+  .search-card {
+    padding: 24px 20px;
+    border-radius: 16px;
+  }
   .search-inputs-bar {
     flex-direction: column;
   }
@@ -2331,13 +2335,132 @@ function closeAllDropdowns() {
   .flight-input-col {
     width: 100%;
   }
-  .calendar-popover {
+  .stays-row {
+    gap: 12px;
+  }
+  .stays-col--destination {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+  .stays-col--date {
+    flex: 1 1 calc(50% - 6px);
+    min-width: 0;
+  }
+  .stays-col--nights {
+    flex: 1 1 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+  .stays-col--guests {
+    flex: 1 1 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+  .stays-col--cabin {
+    flex: 1 1 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+  .stays-search-action {
     width: 100%;
+    margin-left: 0;
+    margin-top: 6px;
+  }
+  .stays-search-btn,
+  .flight-search-btn {
+    width: 100%;
+    justify-content: center;
+  }
+  .calendar-popover {
+    width: 100% !important;
+    max-width: 100% !important;
+    right: 0 !important;
+    left: 0 !important;
+    box-sizing: border-box;
+  }
+  .flight-input-col .calendar-popover,
+  .flight-input-col .rooms-popover {
     right: 0 !important;
     left: 0 !important;
   }
   .cal-months-container {
     flex-direction: column;
+    gap: 16px;
+  }
+  .rooms-popover {
+    width: 100% !important;
+    max-width: 100% !important;
+    left: 0 !important;
+    right: 0 !important;
+    box-sizing: border-box;
+  }
+  .dest-dropdown {
+    width: 100% !important;
+  }
+  .cabin-dropdown {
+    width: 100% !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .page-container {
+    padding: 10px 14px 40px;
+  }
+  .search-card {
+    padding: 18px 14px;
+    border-radius: 14px;
+    margin-bottom: 24px;
+  }
+  .trip-types-row {
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+  .trip-radio {
+    font-size: 0.88rem;
+    gap: 6px;
+  }
+  .stays-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .stays-col {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    flex: 1 1 100% !important;
+  }
+  .calendar-popover {
+    padding: 14px 10px;
+  }
+  .cal-months-container > .month-grid:nth-child(2) {
+    display: none;
+  }
+  .cal-month-title--right {
+    display: none;
+  }
+  .day-cell {
+    height: 32px;
+    font-size: 0.82rem;
+  }
+  .cal-footer {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: stretch;
+  }
+  .cal-footer .apply-btn {
+    width: 100%;
+    margin-left: 0 !important;
+  }
+  .counter-box {
+    width: 110px;
+  }
+  .params-expanded-row {
+    gap: 10px;
+  }
+  .hotels-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>

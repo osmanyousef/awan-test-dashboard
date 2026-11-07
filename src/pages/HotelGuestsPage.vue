@@ -138,8 +138,8 @@ function handleContinue() {
     />
 
     <!-- Main Content Layout -->
-    <div class="max-w-[1400px] mx-auto px-5 sm:px-8 relative -mt-16 pb-16 z-10">
-      <div class="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6 sm:gap-8 items-start">
+    <div class="w-full max-w-[1520px] mx-auto px-4 sm:px-8 lg:px-12 relative -mt-16 pb-16 z-10">
+      <div class="grid grid-cols-1 lg:grid-cols-[1fr_360px] xl:grid-cols-[1fr_380px] gap-6 lg:gap-8 items-start">
         <!-- Left Column: Forms -->
         <main class="space-y-4">
 
@@ -254,7 +254,7 @@ function handleContinue() {
           </section>
 
           <!-- Guest Details Card -->
-          <section class="bg-white rounded-2xl border border-[#d3dff1] p-5 sm:p-6 shadow-xs">
+          <section class="bg-white rounded-2xl border border-[#d3dff1] p-5 sm:p-6 shadow-xs border-s-[3px] border-s-[#4a6cc0] border-e-[3px] border-e-[#4a6cc0]">
             <div class="flex items-center gap-2.5 flex-wrap mb-2">
               <span class="w-8 h-8 rounded-full bg-[#e9effb] text-[#4a6cc0] flex items-center justify-center">
                 <svg class="w-4 h-4 stroke-current stroke-2 fill-none" viewBox="0 0 24 24">
@@ -384,7 +384,7 @@ function handleContinue() {
           </section>
 
           <!-- Contact Details Card -->
-          <section class="bg-white rounded-2xl border border-[#d3dff1] p-5 sm:p-6 shadow-xs">
+          <section class="bg-white rounded-2xl border border-[#d3dff1] p-5 sm:p-6 shadow-xs border-s-[3px] border-s-[#4a6cc0] border-e-[3px] border-e-[#4a6cc0]">
             <h2 class="text-base font-bold text-[#0c1f44] m-0 mb-1">Contact Details</h2>
             <p class="text-xs text-[#63708b] m-0 mb-4">
               Booking confirmation and hotel voucher will be sent to these contact coordinates.

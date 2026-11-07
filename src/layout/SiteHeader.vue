@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
+import BrandLogo from '../components/common/BrandLogo.vue'
 import { dashboardStats } from '../config/mockData'
 
 const route = useRoute()
@@ -106,7 +107,7 @@ const navItems: NavTab[] = [
   { key: 'quo', label: 'Quotation',       labelAr: 'عروض الأسعار',        to: '/dashboard',            icon: 'quo' },
   { key: 'flt', label: 'Flight',          labelAr: 'الطيران',             to: '/flights',              icon: 'flt' },
   { key: 'htl', label: 'Hotel',           labelAr: 'الفنادق',             to: '/hotels',               icon: 'htl' },
-  { key: 'off', label: 'Offline Request', labelAr: 'طلب يدوي',            to: '/operations/amendments', icon: 'off' },
+  { key: 'off', label: 'Manual Services', labelAr: 'خدمات يدوية',         to: '/operations/manual-services', icon: 'off' },
   { key: 'usr', label: 'Profile',         labelAr: 'الملف الشخصي',        to: '/account',              icon: 'usr' },
   { key: 'bk',  label: 'Bookings',        labelAr: 'الحجوزات',            to: '/operations/bookings',  icon: 'bk' },
   { key: 'msg', label: 'Messages',        labelAr: 'الرسائل',             to: '/operations/amendments', icon: 'msg', badge: 3 },
@@ -141,11 +142,8 @@ function formatCurrency(n: number) {
       <div class="wrap">
 
         <!-- Logo -->
-        <RouterLink to="/dashboard" class="logo">
-          <i>
-            <svg class="i" viewBox="0 0 24 24"><path d="M3 12l18-8-7 18-3-7z" /></svg>
-          </i>
-          <span>Travel Portal</span>
+        <RouterLink to="/dashboard" class="logo" aria-label="Awan Travel">
+          <BrandLogo class="brand-svg" />
         </RouterLink>
 
         <!-- PNR search with live suggestion popover -->
@@ -228,11 +226,11 @@ function formatCurrency(n: number) {
               <span>New quotation</span>
             </RouterLink>
 
-            <RouterLink to="/operations/amendments" @click="plusOpen = false">
+            <RouterLink to="/operations/manual-services" @click="plusOpen = false">
               <i style="background:#e1f6ec;color:#0d8a58">
-                <svg class="i" viewBox="0 0 24 24"><path d="M4 14v-2a8 8 0 0116 0v2M4 14h3v5H5a1 1 0 01-1-1zM20 14h-3v5h2a1 1 0 001-1z"/></svg>
+                <svg class="i" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8zM14 3v5h5M9 13h6M9 17h6"/></svg>
               </i>
-              <span>Offline request</span>
+              <span>Manual service</span>
             </RouterLink>
           </div>
         </div>
@@ -270,11 +268,11 @@ function formatCurrency(n: number) {
         </div>
 
         <!-- Language Button -->
-        <button type="button" class="lang" @click="toggleLang">
+        <button type="button" class="lang" @click="toggleLang" :aria-label="lang === 'en' ? 'Switch to Arabic' : 'Switch to English'">
           <svg class="i" viewBox="0 0 24 24">
             <circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18" />
           </svg>
-          <span>{{ lang === 'en' ? 'العربية' : 'English' }}</span>
+          <span class="lang-text">{{ lang === 'en' ? 'العربية' : 'English' }}</span>
         </button>
 
       </div>
@@ -416,24 +414,18 @@ svg.i {
 .logo {
   display: flex;
   align-items: center;
-  gap: 9px;
-  font-weight: 700;
-  font-size: 17px;
-  letter-spacing: -0.3px;
-  white-space: nowrap;
-  margin-inline-end: 6px;
+  margin-inline-end: 8px;
   text-decoration: none;
-  color: #0f172a;
+  flex-shrink: 0;
+  transition: opacity 0.15s;
 }
-.logo i {
-  width: 32px;
-  height: 32px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #6a8fdc, #4a70c0);
-  display: grid;
-  place-items: center;
-  color: #fff;
-  font-style: normal;
+.logo:hover {
+  opacity: 0.9;
+}
+.brand-svg {
+  height: 27px;
+  width: auto;
+  display: block;
 }
 
 /* PNR search */
@@ -833,21 +825,59 @@ svg.i {
   }
   .util .wrap {
     flex-wrap: wrap;
+    gap: 8px;
+    min-height: auto;
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+  .brand-svg {
+    height: 22px;
   }
   .pnr {
     flex: 1 1 100%;
     order: 5;
+    margin-top: 4px;
+  }
+  .plus {
+    width: 38px;
+    height: 38px;
   }
   .lang {
+    height: 38px;
+    padding: 0 10px;
     margin-inline-start: auto;
   }
   .sug {
     width: 100%;
   }
 }
-@media (max-width: 480px) {
+@media (max-width: 640px) {
   .bal {
     display: none;
+  }
+  .lang-text {
+    display: none;
+  }
+  .navw {
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+  .nav {
+    padding: 5px;
+    border-radius: 14px;
+    gap: 2px;
+  }
+  .nav a {
+    height: 36px;
+    padding: 0 11px;
+    font-size: 12px;
+    border-radius: 10px;
+    gap: 6px;
+  }
+  .nav a.dash {
+    width: 36px;
+    height: 36px;
+    margin-inline-end: 2px;
   }
 }
 </style>

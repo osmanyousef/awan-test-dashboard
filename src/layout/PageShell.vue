@@ -127,9 +127,9 @@ const isFlushPage = computed(() => {
 }
 
 .container {
-  max-width: 1560px;
+  max-width: var(--container-max-width, 1520px);
   margin: 0 auto;
-  padding: 0 24px;
+  padding: 0 16px;
   width: 100%;
 }
 
@@ -140,9 +140,15 @@ const isFlushPage = computed(() => {
   padding: 0;
 }
 
-@media (max-width: 768px) {
+@media (min-width: 640px) {
   .container {
-    padding: 0 16px;
+    padding: 0 32px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .container {
+    padding: 0 48px;
   }
 }
 </style>

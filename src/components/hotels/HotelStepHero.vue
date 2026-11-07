@@ -44,7 +44,7 @@ function navigateStep(step: 1 | 2 | 3) {
   <section class="relative overflow-hidden bg-[#0c1f44] text-white pt-6 pb-26 bg-[radial-gradient(rgba(255,255,255,0.09)_1px,transparent_1.2px)] bg-[size:18px_18px]">
     <!-- Decorative Hotel Architectural Outline -->
     <svg
-      class="hidden md:block absolute right-[max(20px,calc((100%-1080px)/2+20px))] top-2 w-[340px] max-w-[40%] text-[#8fa9de] pointer-events-none opacity-40"
+      class="hidden md:block absolute right-[max(20px,calc((100%-1520px)/2+48px))] top-2 w-[340px] max-w-[40%] text-[#8fa9de] pointer-events-none opacity-40"
       viewBox="0 0 340 100"
       fill="none"
       aria-hidden="true"
@@ -59,7 +59,7 @@ function navigateStep(step: 1 | 2 | 3) {
       <line x1="10" y1="90" x2="330" y2="90" stroke="currentColor" stroke-width="1.8" />
     </svg>
 
-    <div class="max-w-[1400px] mx-auto px-5 sm:px-8 relative z-10">
+    <div class="w-full max-w-[1520px] mx-auto px-4 sm:px-8 lg:px-12 relative z-10">
       <!-- Back Navigation Button -->
       <div v-if="backLabel" class="mb-5">
         <button

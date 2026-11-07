@@ -164,7 +164,7 @@ function viewReceipt(id: string) {
 <template>
   <div class="relative w-full min-h-[calc(100vh-80px)] bg-transparent pb-16">
     <!-- Main Container -->
-    <div class="relative z-10 w-full px-6 sm:px-10 lg:px-14 pt-10">
+    <div class="relative z-10 w-full max-w-[1520px] mx-auto px-4 sm:px-8 lg:px-12 pt-10">
       <!-- Header -->
       <div class="flex items-end justify-between gap-4 flex-wrap mb-6">
         <div>
@@ -172,7 +172,7 @@ function viewReceipt(id: string) {
           <p class="text-sm text-[#7b869c] mt-1 m-0">Manage your agency balance, top-up requests, and ledger statements</p>
         </div>
 
-        <div class="flex items-center gap-2.5">
+        <div class="flex items-center gap-2.5 flex-wrap">
           <!-- Request Top-up Primary Button -->
           <button
             type="button"

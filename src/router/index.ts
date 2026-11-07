@@ -37,6 +37,7 @@ const router = createRouter({
     { path: '/bookings', redirect: '/operations/bookings' },
     { path: '/operations/bookings', component: () => import('../pages/BookingsPage.vue') },
     { path: '/operations/amendments', component: () => import('../pages/AmendmentsPage.vue') },
+    { path: '/operations/manual-services', component: () => import('../pages/ManualServicesPage.vue') },
 
     // Account
     { path: '/account', component: () => import('../pages/AccountPage.vue') },

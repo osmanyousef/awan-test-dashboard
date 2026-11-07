@@ -44,6 +44,7 @@ All colors must map by **meaning** to our CSS custom properties (`src/tokens/tok
 
 | Component Name | File Path | Props / Usage |
 |---|---|---|
+| **BrandLogo** | `src/components/common/BrandLogo.vue` | Official Awan Travel vector SVG logo (dark navy text + ocean blue TRAVEL & wave icon) |
 | **SiteHeader** | `src/layout/SiteHeader.vue` | B2B OTA top utility bar + blue navigation toolbar |
 | **PageShell** | `src/layout/PageShell.vue` | Global layout wrapper, handles header, sidebar, flush pages |
 | **FlightStepHero** | `src/components/flights/FlightStepHero.vue` | `:current-step="1\|2\|3"`, `:title`, `:subtitle`, `:back-label`, `:back-route` |

@@ -205,8 +205,8 @@ function handleDone() {
     />
 
     <!-- Main Content Layout -->
-    <div class="max-w-[1080px] mx-auto px-5 relative -mt-16 pb-16 z-10">
-      <div class="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-5 items-start">
+    <div class="w-full max-w-[1520px] mx-auto px-4 sm:px-8 lg:px-12 relative -mt-16 pb-16 z-10">
+      <div class="grid grid-cols-1 lg:grid-cols-[1fr_360px] xl:grid-cols-[1fr_380px] gap-6 lg:gap-8 items-start">
         <!-- Left Column: Review Stack -->
         <main class="space-y-4">
           <!-- Card 1: Flight Details Timeline -->

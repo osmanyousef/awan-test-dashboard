@@ -120,7 +120,7 @@ const statusMeta: Record<string, { bg: string, text: string, dot: string }> = {
 <template>
   <div class="relative w-full min-h-[calc(100vh-80px)] bg-transparent pb-16">
     <!-- Main Container -->
-    <div class="relative z-10 w-full px-6 sm:px-10 lg:px-14 pt-10">
+    <div class="relative z-10 w-full max-w-[1520px] mx-auto px-4 sm:px-8 lg:px-12 pt-10">
       <!-- Header -->
       <div class="flex items-end justify-between gap-4 flex-wrap mb-5.5">
         <div>
@@ -128,7 +128,7 @@ const statusMeta: Record<string, { bg: string, text: string, dot: string }> = {
           <p class="text-sm text-[#7b869c] mt-1 m-0">View and manage all bookings</p>
         </div>
 
-        <div class="flex items-center gap-2.5">
+        <div class="flex items-center gap-2.5 flex-wrap">
           <RouterLink to="/flights"
             class="inline-flex items-center gap-2 h-10 px-4 rounded-[10px] bg-[#5b81d0] hover:bg-[#4a6fc0] text-white text-[13.5px] font-semibold transition-all shadow-xs">
             <svg class="w-3.5 h-3.5 stroke-current stroke-[1.8] fill-none" viewBox="0 0 24 24">

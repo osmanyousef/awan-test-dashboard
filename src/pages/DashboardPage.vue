@@ -60,7 +60,7 @@ function handleQuoteAction() {
 <template>
   <div class="relative w-full min-h-[calc(100vh-100px)] bg-transparent pb-16">
     <!-- Main Content Container -->
-    <main class="relative z-10 max-w-[1400px] mx-auto px-4 sm:px-6 pt-6 sm:pt-8">
+    <main class="relative z-10 w-full max-w-[1520px] mx-auto px-4 sm:px-8 lg:px-12 pt-6 sm:pt-8">
 
       <!-- ══ Welcome Header & Quick Action CTAs ══ -->
       <div class="flex items-end justify-between gap-4 flex-wrap mb-5">
@@ -73,7 +73,7 @@ function handleQuoteAction() {
           </p>
         </div>
 
-        <div class="flex items-center gap-2.5">
+        <div class="flex items-center gap-2.5 flex-wrap">
           <RouterLink
             to="/flights"
             class="inline-flex items-center gap-2 h-10 px-4 rounded-xl bg-gradient-to-b from-[#6a8fdc] to-[#5278c8] hover:from-[#5b81d0] hover:to-[#4a70c0] text-white font-semibold text-xs sm:text-[13px] shadow-[0_8px_18px_-8px_rgba(82,120,200,0.85)] transition-all hover:-translate-y-0.5"
@@ -93,10 +93,10 @@ function handleQuoteAction() {
       </div>
 
       <!-- ══ Dual Tabs Switcher ══ -->
-      <div class="inline-flex gap-1.5 p-1.5 rounded-2xl bg-white/70 backdrop-blur-md border border-white shadow-2xs mb-5">
+      <div class="inline-flex gap-1.5 p-1.5 rounded-2xl bg-white/70 backdrop-blur-md border border-white shadow-2xs mb-5 max-w-full overflow-x-auto">
         <button
           type="button"
-          class="inline-flex items-center gap-2 h-9 px-4 rounded-xl font-semibold text-xs sm:text-[13px] transition cursor-pointer"
+          class="inline-flex items-center gap-2 h-9 px-4 rounded-xl font-semibold text-xs sm:text-[13px] transition cursor-pointer whitespace-nowrap"
           :class="activeTab === 'insight'
             ? 'bg-[#1f2b45] text-white shadow-[0_8px_16px_-8px_rgba(31,43,69,0.7)]'
             : 'text-[#475169] hover:text-[#0f172a] hover:bg-black/5'"
@@ -108,7 +108,7 @@ function handleQuoteAction() {
 
         <button
           type="button"
-          class="inline-flex items-center gap-2 h-9 px-4 rounded-xl font-semibold text-xs sm:text-[13px] transition cursor-pointer"
+          class="inline-flex items-center gap-2 h-9 px-4 rounded-xl font-semibold text-xs sm:text-[13px] transition cursor-pointer whitespace-nowrap"
           :class="activeTab === 'quotation'
             ? 'bg-[#1f2b45] text-white shadow-[0_8px_16px_-8px_rgba(31,43,69,0.7)]'
             : 'text-[#475169] hover:text-[#0f172a] hover:bg-black/5'"
@@ -125,7 +125,7 @@ function handleQuoteAction() {
       <section v-if="activeTab === 'insight'" class="space-y-4 sm:space-y-5">
 
         <!-- 4 KPI Metrics -->
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <DashboardKpiCard
             title="Total bookings"
             value="19"
@@ -249,7 +249,7 @@ function handleQuoteAction() {
       <section v-else class="space-y-4 sm:space-y-5">
 
         <!-- 4 Quotation KPI Metrics -->
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <DashboardKpiCard
             title="Quotes sent"
             value="24"

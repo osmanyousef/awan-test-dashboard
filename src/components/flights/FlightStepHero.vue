@@ -47,7 +47,7 @@ function navigateStep(step: 1 | 2 | 3) {
     <!-- Optional Flight Arc Illustration -->
     <svg
       v-if="showArc"
-      class="hidden md:block absolute right-[max(20px,calc((100%-1080px)/2+20px))] top-2.5 w-[420px] max-w-[46%] text-[#8fa9de] pointer-events-none opacity-60"
+      class="hidden md:block absolute right-[max(20px,calc((100%-1520px)/2+48px))] top-2.5 w-[420px] max-w-[46%] text-[#8fa9de] pointer-events-none opacity-60"
       viewBox="0 0 420 96"
       aria-hidden="true"
     >
@@ -65,7 +65,7 @@ function navigateStep(step: 1 | 2 | 3) {
       </g>
     </svg>
 
-    <div class="max-w-[1080px] mx-auto px-5 relative z-10">
+    <div class="w-full max-w-[1520px] mx-auto px-4 sm:px-8 lg:px-12 relative z-10">
       <!-- Back Navigation Button -->
       <div v-if="backLabel" class="mb-5">
         <button
