@@ -186,7 +186,7 @@ function handleContinue() {
 </script>
 
 <template>
-  <div class="min-h-screen bg-[#eef3fa] bg-[radial-gradient(rgba(12,31,68,0.07)_1px,transparent_1.2px)] bg-[size:18px_18px] text-[#0c1f44]">
+  <div class="min-h-screen bg-transparent text-[#0c1f44]">
     <!-- Step 2 Hero Banner -->
     <FlightStepHero
       :current-step="2"

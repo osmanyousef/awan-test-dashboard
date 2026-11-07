@@ -31,3 +31,11 @@ button {
 input, select, textarea {
   font-family: var(--font-sans);
 }
+
+/* Flights & Stays Signature Atmospheric Canvas */
+.app-atmosphere-bg {
+  background-color: var(--color-bg);
+  background-image: var(--bg-hero-dots), var(--bg-page-gradient);
+  background-size: var(--bg-hero-dots-size, 22px 22px), 100% 380px;
+  background-repeat: repeat, no-repeat;
+}

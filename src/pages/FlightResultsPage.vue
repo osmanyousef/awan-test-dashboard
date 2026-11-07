@@ -1128,7 +1128,7 @@ onMounted(() => {
 
 <style scoped>
 .flight-results-page {
-  --page: #eef3fa;
+  --page: var(--color-bg, #f4f6fa);
   --card: #fff;
   --line: #d9e3f3;
   --ink: #0c1f44;
@@ -1147,13 +1147,7 @@ onMounted(() => {
   font-variant-numeric: tabular-nums;
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
-  background:
-    radial-gradient(55% 200px at 10% 0, rgba(255, 255, 255, 0.85), transparent 70%),
-    radial-gradient(40% 170px at 80% 30px, rgba(255, 255, 255, 0.7), transparent 70%),
-    radial-gradient(30% 130px at 46% 170px, rgba(255, 255, 255, 0.55), transparent 70%),
-    linear-gradient(180deg, #b7d0f1 0, #d3e3f8 260px, var(--page) 600px);
-  background-color: var(--page);
-  background-repeat: no-repeat;
+  background: transparent;
 }
 
 .mono {

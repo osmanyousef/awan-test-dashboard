@@ -4,8 +4,8 @@ const router = createRouter({
   history: createWebHistory(),
   scrollBehavior: () => ({ top: 0, left: 0, behavior: 'instant' }),
   routes: [
-    // Primary landing page: Bedsonline / OTA Booking Engine (Hotels & Flights)
-    { path: '/', component: () => import('../pages/HomePage.vue') },
+    // Primary landing page: Portal Dashboard
+    { path: '/', component: () => import('../pages/DashboardPage.vue') },
     { path: '/hotels', component: () => import('../pages/HomePage.vue') },
     { path: '/hotels/results', component: () => import('../pages/HotelResultsPage.vue') },
     { path: '/hotels/details', component: () => import('../pages/HotelDetailsPage.vue') },

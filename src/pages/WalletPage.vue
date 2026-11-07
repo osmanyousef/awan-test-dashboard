@@ -162,67 +162,7 @@ function viewReceipt(id: string) {
 </script>
 
 <template>
-  <div class="relative w-full min-h-[calc(100vh-80px)] bg-[#f4f6fa] pb-16">
-    <!-- Decorative Hero Background -->
-    <div
-      class="absolute inset-x-0 top-0 h-[340px] w-full pointer-events-none overflow-hidden z-0"
-      aria-hidden="true"
-      style="
-        background:
-          radial-gradient(520px 260px at 12% 0%, rgba(255, 255, 255, 0.75), transparent 70%),
-          radial-gradient(700px 320px at 88% 10%, #cfe0fb 0%, transparent 65%),
-          radial-gradient(800px 360px at 55% -10%, #d9e5fb 0%, transparent 70%),
-          linear-gradient(120deg, #dde9fb 0%, #e6eefb 50%, #eaf0fb 100%);
-        mask-image: linear-gradient(#000 60%, transparent);
-        -webkit-mask-image: linear-gradient(#000 60%, transparent);
-      "
-    >
-      <div
-        class="absolute inset-0"
-        style="
-          background-image: radial-gradient(rgba(91, 129, 208, 0.2) 1px, transparent 1.4px);
-          background-size: 22px 22px;
-          mask-image: linear-gradient(90deg, transparent 35%, #000);
-          -webkit-mask-image: linear-gradient(90deg, transparent 35%, #000);
-        "
-      ></div>
-
-      <!-- Financial Abstract Graphics -->
-      <svg
-        class="absolute right-0 top-0 h-full w-full max-w-[1400px] hidden sm:block pointer-events-none opacity-80"
-        viewBox="0 0 1400 340"
-        preserveAspectRatio="xMaxYMin slice"
-        fill="none"
-      >
-        <g fill="#fff" opacity=".6">
-          <ellipse cx="640" cy="60" rx="110" ry="24" />
-          <ellipse cx="700" cy="44" rx="64" ry="22" />
-          <ellipse cx="760" cy="150" rx="90" ry="20" />
-          <ellipse cx="820" cy="136" rx="52" ry="18" />
-          <ellipse cx="1290" cy="190" rx="80" ry="18" />
-        </g>
-        <!-- Ledger Grid & Growth Waves -->
-        <g stroke="#5b81d0" stroke-opacity=".35" stroke-width="1.6" stroke-dasharray="3 8" stroke-linecap="round">
-          <path d="M720 310C880 200 1020 180 1200 120" />
-          <path d="M920 310C1080 160 1220 110 1380 90" />
-        </g>
-        <g fill="#5b81d0" fill-opacity=".55">
-          <circle cx="720" cy="310" r="4.5" />
-          <circle cx="920" cy="310" r="4.5" />
-        </g>
-        <g fill="#fff" stroke="#5b81d0" stroke-opacity=".5" stroke-width="2">
-          <circle cx="1200" cy="120" r="7" />
-          <circle cx="1380" cy="90" r="7" />
-        </g>
-        <!-- Floating Wallet Card Icon in SVG -->
-        <g transform="translate(1050 140) rotate(-8) scale(1.4)" fill="#5b81d0" fill-opacity=".75">
-          <rect x="0" y="0" width="34" height="22" rx="4" fill="none" stroke="#5b81d0" stroke-width="2" />
-          <line x1="0" y1="6" x2="34" y2="6" stroke="#5b81d0" stroke-width="2" />
-          <circle cx="26" cy="14" r="2.5" fill="#5b81d0" />
-        </g>
-      </svg>
-    </div>
-
+  <div class="relative w-full min-h-[calc(100vh-80px)] bg-transparent pb-16">
     <!-- Main Container -->
     <div class="relative z-10 w-full px-6 sm:px-10 lg:px-14 pt-10">
       <!-- Header -->

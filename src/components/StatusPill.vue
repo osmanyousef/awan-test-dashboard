@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const props = defineProps<{
-  status: 'Confirmed' | 'Pending' | 'Cancelled' | 'Amended' | 'Active' | 'Inactive'
+  status: 'Confirmed' | 'Pending' | 'Cancelled' | 'Amended' | 'Active' | 'Inactive' | 'Accepted'
   size?: 'sm' | 'md'
 }>()
 </script>
@@ -22,7 +22,7 @@ const props = defineProps<{
 .pill--sm { font-size: var(--font-size-xs); padding: 2px var(--space-2); }
 .pill--md { font-size: var(--font-size-xs); padding: 3px var(--space-3); }
 
-.pill--confirmed, .pill--active   { background: var(--color-success-light); color: var(--color-success); }
+.pill--confirmed, .pill--active, .pill--accepted { background: var(--color-success-light); color: var(--color-success); }
 .pill--pending                     { background: var(--color-warning-light); color: var(--color-accent); }
 .pill--cancelled, .pill--inactive  { background: var(--color-danger-light);  color: var(--color-danger); }
 .pill--amended                     { background: var(--color-info-light);    color: var(--color-info); }

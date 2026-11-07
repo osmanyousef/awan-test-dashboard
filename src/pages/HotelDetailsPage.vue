@@ -223,7 +223,7 @@ function selectRoom(room: RoomOption) {
 </script>
 
 <template>
-  <div class="min-h-screen bg-[#f4f6fa] text-[#101828]">
+  <div class="min-h-screen bg-transparent text-[#101828]">
     <div class="w-full max-w-[1520px] mx-auto px-4 sm:px-8 lg:px-12 py-5 pb-16 flex flex-col gap-6">
 
       <!-- ── Back Button ──────────────────────────────────────── -->

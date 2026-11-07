@@ -535,7 +535,7 @@ function exportExcel() {
 
 <style scoped>
 .hotel-results-page {
-  --page: #f7f8fa;
+  --page: var(--color-bg, #f4f6fa);
   --card: #fff;
   --line: #e4e7ec;
   --ink: #0f172a;
@@ -564,8 +564,8 @@ function exportExcel() {
   font-size: 14px;
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
-  background: radial-gradient(900px 320px at 50% -120px, #e2eafc, transparent 70%), var(--page);
-  background-repeat: no-repeat;
+  background: transparent;
+
 }
 
 .mono {

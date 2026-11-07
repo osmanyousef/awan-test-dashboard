@@ -429,58 +429,7 @@ function closeAllDropdowns() {
 </script>
 
 <template>
-  <div class="relative w-full min-h-[calc(100vh-80px)] bg-[#f4f6fa] pb-16" @click="closeAllDropdowns">
-    <!-- Decorative Hero Background -->
-    <div
-      class="absolute inset-x-0 top-0 h-[280px] w-full pointer-events-none overflow-hidden z-0"
-      aria-hidden="true"
-      style="
-        background:
-          radial-gradient(520px 260px at 12% 0%, rgba(255, 255, 255, 0.75), transparent 70%),
-          radial-gradient(700px 320px at 88% 10%, #cfe0fb 0%, transparent 65%),
-          radial-gradient(800px 360px at 55% -10%, #d9e5fb 0%, transparent 70%),
-          linear-gradient(120deg, #dde9fb 0%, #e6eefb 50%, #eaf0fb 100%);
-        mask-image: linear-gradient(#000 60%, transparent);
-        -webkit-mask-image: linear-gradient(#000 60%, transparent);
-      "
-    >
-      <div
-        class="absolute inset-0"
-        style="
-          background-image: radial-gradient(rgba(91, 129, 208, 0.2) 1px, transparent 1.4px);
-          background-size: 22px 22px;
-          mask-image: linear-gradient(90deg, transparent 35%, #000);
-          -webkit-mask-image: linear-gradient(90deg, transparent 35%, #000);
-        "
-      ></div>
-
-      <svg
-        class="absolute right-0 top-0 h-full w-full max-w-[1400px] hidden sm:block pointer-events-none"
-        viewBox="0 0 1400 280"
-        preserveAspectRatio="xMaxYMin slice"
-        fill="none"
-      >
-        <g stroke="#5b81d0" stroke-opacity=".35" stroke-width="1.6" stroke-dasharray="3 8" stroke-linecap="round">
-          <path d="M700 240C860 90 1060 50 1240 120" />
-          <path d="M900 250C1040 120 1230 70 1390 100" />
-        </g>
-        <g fill="#5b81d0" fill-opacity=".55">
-          <circle cx="700" cy="240" r="4.5" />
-          <circle cx="900" cy="250" r="4.5" />
-        </g>
-        <g fill="#fff" stroke="#5b81d0" stroke-opacity=".5" stroke-width="2">
-          <circle cx="1240" cy="120" r="7" />
-          <circle cx="1390" cy="100" r="7" />
-        </g>
-        <g transform="translate(1000 130) rotate(22) scale(1.5)" fill="#5b81d0" fill-opacity=".7">
-          <path
-            d="M10.2 1.2l-.3 3.4-5.2 3.1v1.6l5.3-1.5.4 3.8-1.9 1.4v1.2l2.7-.8 2.7.8v-1.2l-1.9-1.4.4-3.8 5.3 1.5V7.7l-5.2-3.1-.3-3.4c-.1-.9-1.5-.9-1.6 0z"
-            transform="translate(-10 -9)"
-          />
-        </g>
-      </svg>
-    </div>
-
+  <div class="relative w-full min-h-[calc(100vh-80px)] bg-transparent pb-16" @click="closeAllDropdowns">
     <!-- Main Content Canvas -->
     <div class="relative z-10 max-w-[1400px] mx-auto px-6 sm:px-8 pt-8 sm:pt-10">
       <!-- Simple Clean Hero Title -->

@@ -1,44 +1,128 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
-import { dashboardStats, currentUser } from '../config/mockData'
+import { dashboardStats } from '../config/mockData'
 
 const route = useRoute()
 const router = useRouter()
 
-const accountMenuOpen = ref(false)
+// ── State ───────────────────────────────────────────────────
+const plusOpen = ref(false)
+const sugOpen = ref(false)
 const pnrQuery = ref('')
-const selectedAgencyType = ref('SubAgency')
-const selectedAgencyName = ref('Tripoli Central')
+const selectedType = ref('SubAgency')
+const customerName = ref('')
+const lang = ref<'en' | 'ar'>('en')
+const pnrInputRef = ref<HTMLInputElement | null>(null)
 
-const isFlightBookingPage = computed(() =>
-  ['/flights/review', '/flights/traveller', '/flights/pay'].includes(route.path)
-)
+// Sample booking data matching mockup
+const bookings = [
+  { ref: 'WD-HFB0B39', pnr: 'K7XP2M', t: 'f', cu: 'yousefreg2003', d: 'TIP → DXB · Round trip', s: 'confirmed' },
+  { ref: 'WD-F192A02', pnr: 'R3QZ9N', t: 'f', cu: 'Al-Madar Travel', d: 'BEN → IST', s: 'confirmed' },
+  { ref: 'WD-HA0571F', pnr: 'HC-55821', t: 'h', cu: 'yousefreg2003', d: 'Atlantis The Palm, Dubai', s: 'confirmed' },
+  { ref: 'WD-H9938B1', pnr: 'HC-55701', t: 'h', cu: 'Sahara Tours', d: 'Four Seasons Hotel Cairo', s: 'pending' },
+  { ref: 'FLT-78400', pnr: 'M8LD4V', t: 'f', cu: 'Blue Sky Agency', d: 'CDG → SIN', s: 'confirmed' },
+  { ref: 'WD-F5C310', pnr: 'Z2HN7W', t: 'f', cu: 'Sahara Tours', d: 'TIP → CAI', s: 'cancelled' },
+]
 
-function handleRetrievePNR() {
-  if (pnrQuery.value.trim()) {
-    router.push({
-      path: '/operations/bookings',
-      query: { search: pnrQuery.value.trim() },
-    })
+const SC: Record<string, [string, string]> = {
+  confirmed: ['#e1f6ec', '#0d8a58'],
+  pending: ['#fff2d1', '#a16207'],
+  cancelled: ['#fde8e8', '#c0362c'],
+}
+
+const filteredBookings = computed(() => {
+  const q = pnrQuery.value.trim().toLowerCase()
+  if (!q) return bookings.slice(0, 5)
+  return bookings.filter(b =>
+    [b.ref, b.pnr, b.cu, b.d].join(' ').toLowerCase().includes(q)
+  ).slice(0, 5)
+})
+
+function executePnr(pnrVal?: string) {
+  const val = (pnrVal ?? pnrQuery.value).trim()
+  sugOpen.value = false
+  if (val) {
+    router.push({ path: '/operations/bookings', query: { search: val } })
   } else {
     router.push('/operations/bookings')
   }
 }
 
-function toggleAccount() {
-  accountMenuOpen.value = !accountMenuOpen.value
+function selectBooking(b: typeof bookings[0]) {
+  pnrQuery.value = b.pnr
+  executePnr(b.pnr)
 }
 
-function onDocumentClick(e: MouseEvent) {
-  const target = e.target as HTMLElement | null
-  if (!target?.closest('.account-menu-wrap')) {
-    accountMenuOpen.value = false
+function toggleLang() {
+  lang.value = lang.value === 'en' ? 'ar' : 'en'
+  document.documentElement.lang = lang.value
+  document.documentElement.dir = lang.value === 'ar' ? 'rtl' : 'ltr'
+}
+
+function onDocClick(e: MouseEvent) {
+  const target = e.target as HTMLElement
+  if (!target.closest('.pw')) {
+    plusOpen.value = false
+  }
+  if (!target.closest('.pnr')) {
+    sugOpen.value = false
   }
 }
 
-onMounted(() => document.addEventListener('click', onDocumentClick))
-onUnmounted(() => document.removeEventListener('click', onDocumentClick))
+function onKeydown(e: KeyboardEvent) {
+  if (e.key === '/' && !/INPUT|SELECT|TEXTAREA/.test((e.target as HTMLElement).tagName)) {
+    e.preventDefault()
+    pnrInputRef.value?.focus()
+    sugOpen.value = true
+  }
+  if (e.key === 'Escape') {
+    sugOpen.value = false
+    plusOpen.value = false
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('click', onDocClick)
+  document.addEventListener('keydown', onKeydown)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', onDocClick)
+  document.removeEventListener('keydown', onKeydown)
+})
+
+// ── Navigation Bar Items ────────────────────────────────────
+interface NavTab {
+  key: string
+  label: string
+  labelAr: string
+  to: string
+  icon: string
+  badge?: number
+}
+
+const navItems: NavTab[] = [
+  { key: 'quo', label: 'Quotation',       labelAr: 'عروض الأسعار',        to: '/dashboard',            icon: 'quo' },
+  { key: 'flt', label: 'Flight',          labelAr: 'الطيران',             to: '/flights',              icon: 'flt' },
+  { key: 'htl', label: 'Hotel',           labelAr: 'الفنادق',             to: '/hotels',               icon: 'htl' },
+  { key: 'off', label: 'Offline Request', labelAr: 'طلب يدوي',            to: '/operations/amendments', icon: 'off' },
+  { key: 'usr', label: 'Profile',         labelAr: 'الملف الشخصي',        to: '/account',              icon: 'usr' },
+  { key: 'bk',  label: 'Bookings',        labelAr: 'الحجوزات',            to: '/operations/bookings',  icon: 'bk' },
+  { key: 'msg', label: 'Messages',        labelAr: 'الرسائل',             to: '/operations/amendments', icon: 'msg', badge: 3 },
+  { key: 'dsr', label: 'DSR',             labelAr: 'التقرير اليومي',       to: '/finance/statement',    icon: 'dsr' },
+  { key: 'cr',  label: 'CR Request',      labelAr: 'طلب تغيير / استرداد', to: '/operations/amendments', icon: 'cr' },
+  { key: 'rep', label: 'Reports',         labelAr: 'التقارير',            to: '/finance/statement',    icon: 'rep' },
+]
+
+const isDashActive = computed(() => route.path === '/dashboard' || route.path === '/')
+
+function isItemActive(item: NavTab) {
+  if (item.key === 'flt') return route.path === '/flights' || route.path.startsWith('/flights/')
+  if (item.key === 'htl') return route.path === '/hotels' || route.path.startsWith('/hotels/')
+  if (item.to === '/dashboard') return false
+  return route.path === item.to || route.path.startsWith(item.to)
+}
 
 function formatCurrency(n: number) {
   return new Intl.NumberFormat('en-US', {
@@ -47,677 +131,723 @@ function formatCurrency(n: number) {
     maximumFractionDigits: 2,
   }).format(n)
 }
-
-// Navigation Tabs in Blue Bar (aligned with reference screenshot: Dashboard, Flight, Hotel, Bookings, etc.)
-const navTabs = [
-  { label: 'Flight',       to: '/flights' },
-  { label: 'Hotel',        to: '/hotels' },
-  { label: 'Bookings',     to: '/operations/bookings' },
-  { label: 'Wallet',       to: '/finance/wallet' },
-  { label: 'Reports',      to: '/finance/statement' },
-  { label: 'Sub-Agencies', to: '/agency/sub-agencies' },
-  { label: 'Settings',     to: '/agency/settings' },
-]
-
-function isTabActive(tab: { label: string; to: string }) {
-  if (tab.to === '/hotels') {
-    return route.path === '/hotels' || route.path === '/' || route.path.startsWith('/hotels/')
-  }
-  if (tab.to === '/flights') {
-    return route.path === '/flights' || route.path.startsWith('/flights/')
-  }
-  return route.path === tab.to || route.path.startsWith(tab.to)
-}
 </script>
 
 <template>
-  <header class="b2b-header" :class="{ 'b2b-header--dark': isFlightBookingPage }">
+  <header class="hdr">
 
-    <!-- ══ ROW 1: B2B UTILITY BAR (Logo, PNR Search, SubAgency selector, Balance, User) ══ -->
-    <div class="top-bar">
-      <div class="top-bar-container">
+    <!-- ══ UTIL BAR ══ -->
+    <div class="util">
+      <div class="wrap">
 
-        <!-- Left: Official Awan Travel Logo -->
-        <RouterLink to="/" class="brand-link" title="Awan Travel B2B Portal">
-          <img src="/awan-logo.png" alt="Awan Travel" class="brand-img" />
+        <!-- Logo -->
+        <RouterLink to="/dashboard" class="logo">
+          <i>
+            <svg class="i" viewBox="0 0 24 24"><path d="M3 12l18-8-7 18-3-7z" /></svg>
+          </i>
+          <span>Travel Portal</span>
         </RouterLink>
 
-        <!-- Center & Right: B2B Operational Utilities -->
-        <div class="utility-controls">
+        <!-- PNR search with live suggestion popover -->
+        <div class="pnr" id="pw">
+          <input
+            ref="pnrInputRef"
+            v-model="pnrQuery"
+            type="text"
+            placeholder="Retrieve PNR"
+            autocomplete="off"
+            aria-label="Retrieve PNR"
+            @focus="sugOpen = true"
+            @input="sugOpen = true"
+            @keydown.enter.prevent="executePnr()"
+          />
+          <button type="button" class="go" aria-label="Search" @click="executePnr()">
+            <svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" /><path d="M20 20l-4-4" /></svg>
+          </button>
 
-          <!-- 1. Retrieve PNR Search Bar -->
-          <form @submit.prevent="handleRetrievePNR" class="pnr-box">
-            <input
-              type="text"
-              v-model="pnrQuery"
-              placeholder="Retrieve PNR"
-              class="pnr-input"
-            />
-            <button type="submit" class="pnr-btn-search" title="Search PNR">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                <circle cx="11" cy="11" r="8" />
-                <line x1="21" y1="21" x2="16.65" y2="16.65" />
-              </svg>
-            </button>
-            <button
-              type="button"
-              class="pnr-btn-add"
-              title="New Booking / Search"
-              @click="router.push('/hotels')"
-            >
-              +
-            </button>
-          </form>
-
-          <!-- 2. Type / SubAgency Selectors (B2B System Style) -->
-          <div class="subagency-group">
-            <div class="subagency-field">
-              <span class="field-tag">Type</span>
-              <div class="select-wrapper">
-                <select v-model="selectedAgencyType" class="b2b-select">
-                  <option value="SubAgency">SubAgency</option>
-                  <option value="MainAgency">Main Agency</option>
-                  <option value="Corporate">Corporate</option>
-                </select>
-                <svg width="10" height="10" viewBox="0 0 20 20" fill="currentColor" class="select-chevron">
-                  <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-                </svg>
-              </div>
-            </div>
-
-            <div class="subagency-field">
-              <span class="field-tag">Name</span>
-              <div class="select-wrapper">
-                <select v-model="selectedAgencyName" class="b2b-select b2b-select--name">
-                  <option value="Tripoli Central">Tripoli Central</option>
-                  <option value="Benghazi Branch">Benghazi Branch</option>
-                  <option value="Misrata Desk">Misrata Desk</option>
-                </select>
-                <svg width="10" height="10" viewBox="0 0 20 20" fill="currentColor" class="select-chevron">
-                  <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-                </svg>
-              </div>
+          <!-- Suggestions Dropdown -->
+          <div class="sug" :class="{ on: sugOpen }">
+            <h6>{{ pnrQuery ? 'Matches' : 'Recent' }}</h6>
+            <template v-if="filteredBookings.length > 0">
+              <button
+                v-for="b in filteredBookings"
+                :key="b.ref"
+                type="button"
+                @click="selectBooking(b)"
+              >
+                <span class="t" :style="{ background: b.t === 'f' ? '#e3eefd' : '#fff0cf', color: b.t === 'f' ? '#3b6fc4' : '#b7791f' }">
+                  <svg v-if="b.t === 'f'" class="i" viewBox="0 0 24 24"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></svg>
+                  <svg v-else class="i" viewBox="0 0 24 24"><path d="M4 21V5a1 1 0 011-1h8a1 1 0 011 1v16M14 9h5a1 1 0 011 1v11M3 21h18M8 8h2M8 12h2M8 16h2"/></svg>
+                </span>
+                <span>
+                  <b class="mono">{{ b.pnr }}</b>
+                  <small>{{ b.ref }} · {{ b.cu }} · {{ b.d }}</small>
+                </span>
+                <em :style="{ background: SC[b.s][0], color: SC[b.s][1] }">{{ b.s }}</em>
+              </button>
+            </template>
+            <div v-else class="none">
+              No booking found for “{{ pnrQuery }}”. Press Enter to search anyway.
             </div>
           </div>
+        </div>
 
-          <!-- 3. Balance Box (Styled precisely as in reference) -->
-          <RouterLink to="/finance/wallet" class="balance-box" title="View Agency Wallet & Statement">
-            <span class="balance-title">Balance</span>
-            <span class="balance-number">{{ formatCurrency(dashboardStats.walletBalance) }} LYD</span>
+        <!-- Quick create button & dropdown -->
+        <div class="pw">
+          <button
+            type="button"
+            class="plus"
+            aria-label="Quick create"
+            :aria-expanded="plusOpen"
+            @click.stop="plusOpen = !plusOpen"
+          >
+            <svg class="i" viewBox="0 0 24 24" style="width:20px;height:20px">
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+          </button>
+
+          <div class="menu" :class="{ on: plusOpen }">
+            <RouterLink to="/flights" @click="plusOpen = false">
+              <i style="background:#e3eefd;color:#3b6fc4">
+                <svg class="i" viewBox="0 0 24 24"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></svg>
+              </i>
+              <span>New flight booking</span>
+            </RouterLink>
+
+            <RouterLink to="/hotels" @click="plusOpen = false">
+              <i style="background:#fff0cf;color:#b7791f">
+                <svg class="i" viewBox="0 0 24 24"><path d="M4 21V5a1 1 0 011-1h8a1 1 0 011 1v16M14 9h5a1 1 0 011 1v11M3 21h18M8 8h2M8 12h2M8 16h2"/></svg>
+              </i>
+              <span>New hotel booking</span>
+            </RouterLink>
+
+            <RouterLink to="/dashboard" @click="plusOpen = false">
+              <i style="background:#efe9ff;color:#6a3fe0">
+                <svg class="i" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8zM14 3v5h5M9 13h6M9 17h6"/></svg>
+              </i>
+              <span>New quotation</span>
+            </RouterLink>
+
+            <RouterLink to="/operations/amendments" @click="plusOpen = false">
+              <i style="background:#e1f6ec;color:#0d8a58">
+                <svg class="i" viewBox="0 0 24 24"><path d="M4 14v-2a8 8 0 0116 0v2M4 14h3v5H5a1 1 0 01-1-1zM20 14h-3v5h2a1 1 0 001-1z"/></svg>
+              </i>
+              <span>Offline request</span>
+            </RouterLink>
+          </div>
+        </div>
+
+        <!-- Type Selector -->
+        <label class="fld ty">
+          <span>Type</span>
+          <select v-model="selectedType">
+            <option value="SubAgency">SubAgency</option>
+            <option value="Agency">Agency</option>
+            <option value="Corporate">Corporate</option>
+          </select>
+        </label>
+
+        <!-- Customer Name Input -->
+        <label class="fld nm">
+          <span>Name</span>
+          <input
+            v-model="customerName"
+            type="text"
+            placeholder="Customer name"
+            autocomplete="off"
+          />
+        </label>
+
+        <!-- Balance Widget with Top Up Button -->
+        <div class="bal">
+          <div>
+            <span>Balance</span>
+            <b class="mono">{{ formatCurrency(dashboardStats.walletBalance) }} LYD</b>
+          </div>
+          <RouterLink to="/finance/wallet" class="topup-btn">
+            Top up
+          </RouterLink>
+        </div>
+
+        <!-- Language Button -->
+        <button type="button" class="lang" @click="toggleLang">
+          <svg class="i" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18" />
+          </svg>
+          <span>{{ lang === 'en' ? 'العربية' : 'English' }}</span>
+        </button>
+
+      </div>
+
+      <!-- ══ MAIN NAV BAR ══ -->
+      <div class="wrap navw">
+        <nav class="nav" aria-label="Main">
+
+          <!-- Dashboard Circular Button -->
+          <RouterLink
+            to="/dashboard"
+            class="dash"
+            :class="{ on: isDashActive }"
+            aria-label="Dashboard"
+            title="Dashboard"
+          >
+            <svg class="i" viewBox="0 0 24 24">
+              <rect x="3" y="3" width="7" height="9" rx="1.5" />
+              <rect x="14" y="3" width="7" height="5" rx="1.5" />
+              <rect x="14" y="12" width="7" height="9" rx="1.5" />
+              <rect x="3" y="16" width="7" height="5" rx="1.5" />
+            </svg>
           </RouterLink>
 
-          <!-- 4. Language Selector -->
-          <button class="lang-switch-btn" title="Toggle Language">
-            <span class="lang-icon">🌐</span>
-            <span class="lang-text">العربية</span>
-          </button>
-
-          <!-- 5. Notifications Bell -->
-          <button class="bell-btn" title="Notifications" @click="router.push('/operations/bookings')">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-              <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0" />
+          <!-- Nav Items with Exact SVGs and Badges -->
+          <RouterLink
+            v-for="item in navItems"
+            :key="item.key"
+            :to="item.to"
+            :class="{ on: isItemActive(item) }"
+          >
+            <!-- Quotation -->
+            <svg v-if="item.icon === 'quo'" class="i" viewBox="0 0 24 24">
+              <path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8zM14 3v5h5M9 13h6M9 17h6" />
             </svg>
-            <span class="bell-indicator">3</span>
-          </button>
 
-          <!-- 6. User Profile Dropdown -->
-          <div class="account-menu-wrap">
-            <button class="account-btn" @click.stop="toggleAccount" title="User Profile">
-              <div class="user-avatar">{{ currentUser.avatar }}</div>
-              <span class="user-handle">{{ currentUser.name }}</span>
-              <svg width="11" height="11" viewBox="0 0 20 20" fill="currentColor" class="user-chevron">
-                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-              </svg>
-            </button>
+            <!-- Flight -->
+            <svg v-else-if="item.icon === 'flt'" class="i" viewBox="0 0 24 24">
+              <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z" />
+            </svg>
 
-            <!-- Dropdown Menu -->
-            <div v-if="accountMenuOpen" class="account-popover">
-              <div class="popover-header">
-                <span class="popover-name">{{ currentUser.name }}</span>
-                <span class="popover-email">{{ currentUser.email }}</span>
-                <span class="popover-role">{{ currentUser.role }} · {{ currentUser.agency }}</span>
-              </div>
-              <div class="popover-divider"></div>
-              <RouterLink to="/account" class="popover-link" @click="accountMenuOpen = false">
-                <span>👤</span>
-                <span>Profile &amp; Account</span>
-              </RouterLink>
-              <RouterLink to="/agency/settings" class="popover-link" @click="accountMenuOpen = false">
-                <span>⚙️</span>
-                <span>Agency Settings</span>
-              </RouterLink>
-              <RouterLink to="/finance/wallet" class="popover-link" @click="accountMenuOpen = false">
-                <span>💳</span>
-                <span>Wallet &amp; Credit Line</span>
-              </RouterLink>
-              <div class="popover-divider"></div>
-              <button class="popover-link popover-link--logout" @click="accountMenuOpen = false">
-                <span>↩</span>
-                <span>Sign out</span>
-              </button>
-            </div>
-          </div>
+            <!-- Hotel -->
+            <svg v-else-if="item.icon === 'htl'" class="i" viewBox="0 0 24 24">
+              <path d="M4 21V5a1 1 0 011-1h8a1 1 0 011 1v16M14 9h5a1 1 0 011 1v11M3 21h18M8 8h2M8 12h2M8 16h2" />
+            </svg>
 
-        </div>
+            <!-- Offline Request -->
+            <svg v-else-if="item.icon === 'off'" class="i" viewBox="0 0 24 24">
+              <path d="M4 14v-2a8 8 0 0116 0v2M4 14h3v5H5a1 1 0 01-1-1zM20 14h-3v5h2a1 1 0 001-1z" />
+            </svg>
+
+            <!-- Profile -->
+            <svg v-else-if="item.icon === 'usr'" class="i" viewBox="0 0 24 24">
+              <circle cx="12" cy="8" r="4" /><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7" />
+            </svg>
+
+            <!-- Bookings -->
+            <svg v-else-if="item.icon === 'bk'" class="i" viewBox="0 0 24 24">
+              <rect x="5" y="4" width="14" height="17" rx="2" /><path d="M9 4V3h6v1M9 11h6M9 15h4" />
+            </svg>
+
+            <!-- Messages -->
+            <svg v-else-if="item.icon === 'msg'" class="i" viewBox="0 0 24 24">
+              <path d="M4 5h16v11H9l-5 4z" />
+            </svg>
+
+            <!-- DSR -->
+            <svg v-else-if="item.icon === 'dsr'" class="i" viewBox="0 0 24 24">
+              <path d="M5 20V10M12 20V4M19 20v-7" />
+            </svg>
+
+            <!-- CR Request -->
+            <svg v-else-if="item.icon === 'cr'" class="i" viewBox="0 0 24 24">
+              <path d="M4 12a8 8 0 0114-5l2 2M20 12a8 8 0 01-14 5l-2-2M20 4v5h-5M4 20v-5h5" />
+            </svg>
+
+            <!-- Reports -->
+            <svg v-else class="i" viewBox="0 0 24 24">
+              <path d="M6 3h9l4 4v14H6zM15 3v4h4M9 13h6M9 17h4" />
+            </svg>
+
+            <span>{{ lang === 'ar' ? item.labelAr : item.label }}</span>
+            <span v-if="item.badge" class="bd">{{ item.badge }}</span>
+          </RouterLink>
+
+        </nav>
       </div>
     </div>
-
-    <!-- ══ ROW 2: B2B BLUE NAVIGATION BAR (Matching screenshot exactly) ══ -->
-    <nav class="blue-nav-bar">
-      <div class="blue-nav-container">
-
-        <!-- Dashboard Speedometer Icon (First item on left) -->
-        <RouterLink
-          to="/dashboard"
-          class="dash-icon-tab"
-          :class="{ 'dash-icon-tab--active': route.path === '/dashboard' }"
-          title="Operations Dashboard"
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 14l3-3" />
-            <path d="M3.34 19a10 10 0 1 1 17.32 0" />
-          </svg>
-        </RouterLink>
-
-        <!-- Navigation Tabs -->
-        <div class="nav-tabs-list">
-          <RouterLink
-            v-for="tab in navTabs"
-            :key="tab.label"
-            :to="tab.to"
-            class="b2b-tab-link"
-            :class="{ 'b2b-tab-link--active': isTabActive(tab) }"
-          >
-            {{ tab.label }}
-          </RouterLink>
-        </div>
-
-      </div>
-    </nav>
 
   </header>
 </template>
 
 <style scoped>
-/* ── Main Header Shell ── */
-.b2b-header {
+/* ══ EXACT CSS SPECIFICATION FROM MOCKUP ══ */
+.hdr {
   position: sticky;
   top: 0;
   z-index: 50;
-  background: #ffffff;
-  border-bottom: 1px solid #dce4f0;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+  background: var(--bg-header-atmosphere, linear-gradient(180deg, rgba(235, 242, 252, 0.96) 0%, rgba(228, 238, 251, 0.92) 100%));
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid rgba(220, 230, 244, 0.7);
 }
-
-/* ── Top Utility Row ── */
-.top-bar {
-  background: #ffffff;
-  border-bottom: 1px solid #e8eef6;
-  padding: 8px 24px;
+.util {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: saturate(1.5) blur(14px);
+  -webkit-backdrop-filter: saturate(1.5) blur(14px);
+  border-bottom: 1px solid #e4e9f1;
+  box-shadow: 0 6px 20px -16px rgba(40, 70, 140, 0.5);
 }
-.top-bar-container {
-  max-width: 1560px;
+.wrap {
+  max-width: 1360px;
   margin: 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  min-height: 46px;
+  padding: 0 24px;
 }
-
-/* Brand Logo */
-.brand-link {
-  display: flex;
-  align-items: center;
-  text-decoration: none;
-  flex-shrink: 0;
-}
-.brand-img {
-  height: 38px;
-  width: auto;
-  object-fit: contain;
-}
-
-/* Utility Controls */
-.utility-controls {
+.util .wrap {
   display: flex;
   align-items: center;
   gap: 12px;
-  flex-wrap: nowrap;
+  min-height: 68px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+svg.i {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex: none;
+}
+.mono {
+  font-family: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
 }
 
-/* 1. Retrieve PNR Search */
-.pnr-box {
-  display: flex;
-  align-items: stretch;
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
-  overflow: hidden;
-  background: #ffffff;
-  height: 34px;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.03);
-}
-.pnr-input {
-  border: none;
-  padding: 0 10px;
-  font-size: 13px;
-  font-family: inherit;
-  width: 130px;
-  color: #1e293b;
-  outline: none;
-  background: transparent;
-}
-.pnr-input::placeholder {
-  color: #94a3b8;
-  font-size: 12px;
-}
-.pnr-btn-search {
-  background: #1e293b;
-  border: none;
-  color: #ffffff;
-  padding: 0 10px;
+/* Logo */
+.logo {
   display: flex;
   align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: background 0.15s;
+  gap: 9px;
+  font-weight: 700;
+  font-size: 17px;
+  letter-spacing: -0.3px;
+  white-space: nowrap;
+  margin-inline-end: 6px;
+  text-decoration: none;
+  color: #0f172a;
 }
-.pnr-btn-search:hover {
-  background: #0f172a;
-}
-.pnr-btn-add {
-  background: #f8fafc;
-  border: none;
-  border-left: 1px solid #cbd5e1;
-  color: #334155;
-  font-size: 16px;
-  font-weight: 600;
-  padding: 0 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-.pnr-btn-add:hover {
-  background: #e2e8f0;
-}
-
-/* 2. SubAgency Selectors */
-.subagency-group {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.subagency-field {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  color: #64748b;
-}
-.field-tag {
-  font-size: 11px;
-  font-weight: 600;
-  color: #64748b;
-  text-transform: capitalize;
-}
-.select-wrapper {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-}
-.b2b-select {
-  appearance: none;
-  background: #ffffff;
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
+.logo i {
+  width: 32px;
   height: 32px;
-  padding: 0 24px 0 10px;
-  font-size: 12px;
-  font-weight: 600;
-  color: #1e293b;
-  font-family: inherit;
-  cursor: pointer;
-  outline: none;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
-}
-.b2b-select--name {
-  min-width: 120px;
-}
-.select-chevron {
-  position: absolute;
-  right: 8px;
-  pointer-events: none;
-  color: #64748b;
-}
-
-/* 3. Balance Box */
-.balance-box {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: flex-end;
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
-  padding: 3px 12px;
-  height: 34px;
-  background: #ffffff;
-  text-decoration: none;
-  min-width: 120px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
-  transition: all 0.15s ease;
-}
-.balance-box:hover {
-  border-color: #059669;
-  background: #f0fdf4;
-}
-.balance-title {
-  font-size: 10px;
-  font-weight: 600;
-  color: #64748b;
-  line-height: 1;
-}
-.balance-number {
-  font-size: 13px;
-  font-weight: 700;
-  color: #047857;
-  line-height: 1.2;
-}
-
-/* 4. Language Selector */
-.lang-switch-btn {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  background: #f8fafc;
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
-  height: 34px;
-  padding: 0 10px;
-  font-size: 12px;
-  font-weight: 600;
-  color: #334155;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-.lang-switch-btn:hover {
-  background: #e2e8f0;
-}
-.lang-icon {
-  font-size: 13px;
-}
-
-/* 5. Bell Button */
-.bell-btn {
-  position: relative;
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: #64748b;
-  padding: 6px;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: color 0.15s, background 0.15s;
-}
-.bell-btn:hover {
-  background: #f1f5f9;
-  color: #0f172a;
-}
-.bell-indicator {
-  position: absolute;
-  top: 3px;
-  right: 3px;
-  background: #ef4444;
-  color: #ffffff;
-  font-size: 9px;
-  font-weight: 700;
-  width: 15px;
-  height: 15px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* 6. Account Menu */
-.account-menu-wrap {
-  position: relative;
-}
-.account-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 6px;
-  transition: background 0.15s;
-}
-.account-btn:hover {
-  background: #f1f5f9;
-}
-.user-avatar {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: #2563eb;
-  color: #ffffff;
-  font-weight: 700;
-  font-size: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.user-handle {
-  font-size: 12.5px;
-  font-weight: 600;
-  color: #1e293b;
-}
-.user-chevron {
-  color: #64748b;
-}
-
-/* Account Popover */
-.account-popover {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  min-width: 230px;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
   border-radius: 10px;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-  padding: 6px 0;
-  z-index: 100;
+  background: linear-gradient(135deg, #6a8fdc, #4a70c0);
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-style: normal;
 }
-.popover-header {
-  padding: 10px 16px 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+
+/* PNR search */
+.pnr {
+  position: relative;
+  flex: 0 1 300px;
+  min-width: 200px;
 }
-.popover-name {
-  font-size: 13px;
-  font-weight: 700;
+.pnr input {
+  width: 100%;
+  height: 46px;
+  padding: 0 56px 0 14px;
+  border: 1px solid #d9e0ee;
+  background: #fff;
+  border-radius: 12px;
+  font-size: 14px;
   color: #0f172a;
+  outline: none;
+  transition: 0.15s;
 }
-.popover-email {
-  font-size: 11.5px;
-  color: #64748b;
+:global(html[dir="rtl"]) .pnr input {
+  padding: 0 14px 0 56px;
 }
-.popover-role {
+.pnr input:focus {
+  outline: 0;
+  border-color: #5b81d0;
+  box-shadow: 0 0 0 4px rgba(91, 129, 208, 0.16);
+}
+.pnr .go {
+  position: absolute;
+  inset-inline-end: 5px;
+  top: 5px;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 9px;
+  background: #1f2b45;
+  color: #fff;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: 0.15s;
+}
+.pnr .go:hover {
+  background: #5b81d0;
+}
+
+/* Suggestions Popover */
+.sug {
+  position: absolute;
+  inset-inline-start: 0;
+  top: 52px;
+  width: min(420px, 92vw);
+  background: #fff;
+  border: 1px solid #e4e9f1;
+  border-radius: 14px;
+  box-shadow: 0 20px 40px -18px rgba(30, 50, 100, 0.45);
+  padding: 6px;
+  display: none;
+  z-index: 70;
+}
+.sug.on {
+  display: block;
+}
+.sug h6 {
+  margin: 8px 10px 4px;
   font-size: 10.5px;
-  color: #2563eb;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: #8791ab;
   font-weight: 600;
-  margin-top: 2px;
 }
-.popover-divider {
-  height: 1px;
-  background: #e2e8f0;
-  margin: 4px 0;
-}
-.popover-link {
+.sug button {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 16px;
-  font-size: 13px;
-  color: #334155;
-  text-decoration: none;
-  cursor: pointer;
-  background: none;
-  border: none;
+  gap: 11px;
   width: 100%;
-  text-align: left;
-  font-family: inherit;
+  padding: 9px 10px;
+  border: 0;
+  background: none;
+  border-radius: 10px;
+  cursor: pointer;
+  text-align: start;
   transition: background 0.1s;
 }
-.popover-link:hover {
-  background: #f1f5f9;
+.sug button:hover {
+  background: #eaf0fc;
+}
+.sug .t {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+.sug b {
+  display: block;
+  font-size: 13px;
   color: #0f172a;
 }
-.popover-link--logout {
-  color: #dc2626;
+.sug small {
+  color: #8791ab;
+  font-size: 11.5px;
 }
-.popover-link--logout:hover {
-  background: #fee2e2;
-  color: #dc2626;
+.sug em {
+  margin-inline-start: auto;
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 999px;
+}
+.sug .none {
+  padding: 16px;
+  text-align: center;
+  color: #8791ab;
+  font-size: 13px;
 }
 
-/* ── ROW 2: B2B BLUE NAVIGATION BAR (Matching screenshot) ── */
-.blue-nav-bar {
-  background: #2b5ec4;
-  padding: 0 24px;
+/* Quick create (+) */
+.pw {
+  position: relative;
 }
-.blue-nav-container {
-  max-width: 1560px;
-  margin: 0 auto;
+.plus {
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  border: 1px dashed #b7c6e6;
+  background: #fff;
+  color: #5b81d0;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: 0.2s;
+}
+.plus:hover,
+.plus[aria-expanded="true"] {
+  background: #5b81d0;
+  border: 1px solid #5b81d0;
+  color: #fff;
+}
+.plus svg {
+  transition: transform 0.25s;
+}
+.plus[aria-expanded="true"] svg {
+  transform: rotate(45deg);
+}
+
+/* Quick Create Menu */
+.menu {
+  position: absolute;
+  inset-inline-start: 0;
+  top: 54px;
+  min-width: 230px;
+  background: #fff;
+  border: 1px solid #e4e9f1;
+  border-radius: 14px;
+  box-shadow: 0 20px 40px -18px rgba(30, 50, 100, 0.45);
+  padding: 6px;
+  display: none;
+  z-index: 70;
+}
+.menu.on {
+  display: block;
+  animation: up 0.2s ease;
+}
+.menu a {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 10px 11px;
+  border-radius: 10px;
+  color: #0f172a;
+  font-weight: 500;
+  font-size: 13.5px;
+  text-decoration: none;
+  cursor: pointer;
+}
+.menu a:hover {
+  background: #eaf0fc;
+}
+.menu a i {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  font-style: normal;
+}
+@keyframes up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+/* Fields (Type / Name) */
+.fld {
+  position: relative;
+  height: 46px;
+  border: 1px solid #d9e0ee;
+  border-radius: 12px;
+  background: #fff;
+  padding: 5px 12px 0;
+  transition: 0.15s;
+}
+.fld:focus-within {
+  border-color: #5b81d0;
+  box-shadow: 0 0 0 4px rgba(91, 129, 208, 0.16);
+}
+.fld span {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: #8791ab;
+  font-weight: 600;
+}
+.fld select,
+.fld input {
+  width: 100%;
+  border: 0;
+  background: none;
+  padding: 0;
+  font-size: 13.5px;
+  font-weight: 500;
+  outline: 0;
+  margin-top: 1px;
+  color: #0f172a;
+}
+.fld select {
+  appearance: none;
+  cursor: pointer;
+}
+.fld.ty {
+  width: 160px;
+}
+.fld.nm {
+  flex: 1;
+  min-width: 150px;
+  max-width: 260px;
+}
+
+/* Balance */
+.bal {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 46px;
+  padding: 0 6px 0 14px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #f7f9fe, #eaf0fc);
+  border: 1px solid #d9e3f6;
+  white-space: nowrap;
+}
+.bal span {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: #8791ab;
+  font-weight: 600;
+}
+.bal b {
+  font-size: 15px;
+  letter-spacing: -0.3px;
+  color: #0f172a;
+}
+.bal .topup-btn {
+  height: 34px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 9px;
+  background: #fff;
+  color: #5b81d0;
+  font-weight: 700;
+  font-size: 12px;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.12);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  transition: all 0.15s;
+}
+.bal .topup-btn:hover {
+  background: #5b81d0;
+  color: #fff;
+}
+
+/* Language */
+.lang {
+  height: 40px;
+  padding: 0 13px;
+  border: 1px solid #d9e0ee;
+  border-radius: 11px;
+  background: #fff;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-inline-start: auto;
+  color: #0f172a;
+  transition: 0.15s;
+}
+.lang:hover {
+  border-color: #b9cbee;
+  color: #5b81d0;
+}
+
+/* Main Nav */
+.navw {
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+.nav {
   display: flex;
   align-items: center;
   gap: 4px;
-}
-
-/* Dashboard Speedometer Icon */
-.dash-icon-tab {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 42px;
-  height: 38px;
-  color: #ffffff;
-  border-radius: 6px 6px 0 0;
-  background: rgba(255, 255, 255, 0.15);
-  transition: background 0.15s;
-  text-decoration: none;
-  margin-right: 6px;
-}
-.dash-icon-tab:hover {
-  background: rgba(255, 255, 255, 0.25);
-}
-.dash-icon-tab--active {
-  background: #1d4596;
-}
-
-/* Tabs list */
-.nav-tabs-list {
-  display: flex;
-  align-items: center;
-  gap: 2px;
+  padding: 7px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #6389d8, #4e75c4);
+  box-shadow: 0 14px 28px -16px rgba(50, 90, 170, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.25);
   overflow-x: auto;
   scrollbar-width: none;
 }
-.nav-tabs-list::-webkit-scrollbar {
+.nav::-webkit-scrollbar {
   display: none;
 }
-.b2b-tab-link {
-  padding: 0 16px;
-  height: 38px;
+.nav a {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  font-size: 13.5px;
+  gap: 8px;
+  height: 42px;
+  padding: 0 15px;
+  border-radius: 12px;
+  color: #fff;
   font-weight: 600;
-  color: #ffffff;
+  font-size: 13.5px;
   text-decoration: none;
   white-space: nowrap;
-  border-radius: 6px 6px 0 0;
-  transition: all 0.15s ease;
-  opacity: 0.88;
+  cursor: pointer;
+  transition: background 0.15s;
 }
-.b2b-tab-link:hover {
-  opacity: 1;
-  background: rgba(255, 255, 255, 0.14);
+.nav a:hover {
+  background: rgba(255, 255, 255, 0.16);
 }
-.b2b-tab-link--active {
-  opacity: 1;
-  background: #1d4596;
+.nav a.on {
+  background: #fff;
+  color: #4a70c0;
+  box-shadow: 0 4px 12px -4px rgba(20, 40, 100, 0.45);
+}
+.nav a.dash {
+  width: 46px;
+  padding: 0;
+  justify-content: center;
+  margin-inline-end: 6px;
+  background: #fff;
+  color: #4a70c0;
+  border-radius: 50%;
+  height: 42px;
+}
+.nav a .bd {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: #ff6b5e;
+  color: #fff;
+  font-size: 10.5px;
+  line-height: 18px;
+  text-align: center;
   font-weight: 700;
-  box-shadow: inset 0 -2px 0 #ffffff;
 }
 
-/* ── Flight booking dark mode overrides ── */
-.b2b-header--dark {
-  background: #0c1f44;
-  border-bottom-color: rgba(255, 255, 255, 0.1);
+@media (max-width: 1180px) {
+  .fld.ty,
+  .fld.nm {
+    display: none;
+  }
 }
-.b2b-header--dark .top-bar {
-  background: #0c1f44;
-  border-bottom-color: rgba(255, 255, 255, 0.08);
+@media (max-width: 980px) {
+  .bal .topup-btn {
+    display: none;
+  }
+  .bal {
+    padding-inline-end: 14px;
+  }
 }
-.b2b-header--dark .pnr-box {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.2);
+@media (max-width: 700px) {
+  .wrap {
+    padding: 0 12px;
+  }
+  .util .wrap {
+    flex-wrap: wrap;
+  }
+  .pnr {
+    flex: 1 1 100%;
+    order: 5;
+  }
+  .lang {
+    margin-inline-start: auto;
+  }
+  .sug {
+    width: 100%;
+  }
 }
-.b2b-header--dark .pnr-input {
-  color: #ffffff;
-}
-.b2b-header--dark .pnr-btn-add {
-  background: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
-  border-color: rgba(255, 255, 255, 0.2);
-}
-.b2b-header--dark .field-tag {
-  color: #94a3b8;
-}
-.b2b-header--dark .b2b-select {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.2);
-  color: #ffffff;
-}
-.b2b-header--dark .balance-box {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(16, 185, 129, 0.4);
-}
-.b2b-header--dark .balance-title {
-  color: #86efac;
-}
-.b2b-header--dark .balance-number {
-  color: #d1fae5;
-}
-.b2b-header--dark .lang-switch-btn {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.2);
-  color: #ffffff;
-}
-.b2b-header--dark .bell-btn {
-  color: #cbd5e1;
-}
-.b2b-header--dark .user-handle {
-  color: #ffffff;
-}
-.b2b-header--dark .blue-nav-bar {
-  background: #091733;
-}
-
-@media (max-width: 1024px) {
-  .subagency-group { display: none; }
-  .pnr-box { display: none; }
-}
-@media (max-width: 768px) {
-  .lang-switch-btn { display: none; }
-  .user-handle { display: none; }
+@media (max-width: 480px) {
+  .bal {
+    display: none;
+  }
 }
 </style>

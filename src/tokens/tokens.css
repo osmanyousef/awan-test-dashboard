@@ -15,12 +15,32 @@
   --color-accent-hover: #1f2b38;
   --color-cta: #5782ce;                /* Main Action Color */
 
-  /* Backgrounds */
-  --color-bg: #e0e8f0;                 /* Awan Official Canvas Background (#e0e8f0) */
+  /* Backgrounds - Unified Flights & Stays Canvas */
+  --color-bg: #f4f6fa;                 /* Unified Platform Canvas Background (#f4f6fa) */
   --color-surface: #ffffff;            /* Card Surface White */
   --color-surface-hover: #f8fafc;
   --color-border: #ccd8e6;             /* Clean Soft Slate Blue Border */
   --color-border-focus: #5782ce;
+
+  /* Atmospheric Hero Gradient Tokens (from Flights & Stays) */
+  --bg-hero-atmosphere:
+    radial-gradient(520px 260px at 12% 0%, rgba(255, 255, 255, 0.75), transparent 70%),
+    radial-gradient(700px 320px at 88% 10%, #cfe0fb 0%, transparent 65%),
+    radial-gradient(800px 360px at 55% -10%, #d9e5fb 0%, transparent 70%),
+    linear-gradient(120deg, #dde9fb 0%, #e6eefb 50%, #eaf0fb 100%);
+  --bg-hero-dots: radial-gradient(rgba(91, 129, 208, 0.2) 1px, transparent 1.4px);
+  --bg-hero-dots-size: 22px 22px;
+
+  /* Header canvas backdrop gradient (matching top of atmospheric gradient) */
+  --bg-header-atmosphere: linear-gradient(180deg, rgba(235, 242, 252, 0.96) 0%, rgba(228, 238, 251, 0.92) 100%);
+
+  /* Standalone fading page gradient variable (smoothly merges into --color-bg) */
+  --bg-page-gradient:
+    radial-gradient(520px 260px at 12% 0%, rgba(255, 255, 255, 0.8), transparent 70%),
+    radial-gradient(700px 320px at 88% 10%, #cfe0fb 0%, transparent 65%),
+    radial-gradient(800px 360px at 55% -10%, #d9e5fb 0%, transparent 70%),
+    linear-gradient(180deg, rgba(244, 246, 250, 0) 220px, var(--color-bg) 380px),
+    linear-gradient(120deg, #dde9fb 0%, #e6eefb 50%, #eaf0fb 100%);
 
   /* Text */
   --color-text: #1f2b38;               /* Awan Official Deep Slate Text */
